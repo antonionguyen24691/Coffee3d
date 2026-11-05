@@ -1,0 +1,33 @@
+{
+  "rules": {
+    "rooms": {
+      "$room": {
+        "players": {
+          ".read": "auth != null",
+          "$pid": {
+            ".write": "auth != null && $pid.beginsWith(auth.uid)",
+            "m": {
+              ".validate": "newData.child('x').isNumber() && newData.child('z').isNumber()"
+            },
+            "s": {
+              ".validate": "newData.isString() && newData.val().length < 6000"
+            },
+            "t": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
+        "chat": {
+          ".read": "auth != null",
+          "$msg": {
+            ".write": "auth != null && !data.exists()",
+            ".validate": "newData.hasChildren(['n','t','at','u']) && newData.child('u').val() == auth.uid && newData.child('t').isString() && newData.child('t').val().length <= 100 && newData.child('n').isString() && newData.child('n').val().length <= 16"
+          }
+        }
+      }
+    }
+  }
+}
