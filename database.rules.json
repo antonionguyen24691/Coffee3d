@@ -6,18 +6,10 @@
           ".read": "auth != null",
           "$pid": {
             ".write": "auth != null && $pid.beginsWith(auth.uid)",
-            "m": {
-              ".validate": "newData.child('x').isNumber() && newData.child('z').isNumber()"
-            },
-            "s": {
-              ".validate": "newData.isString() && newData.val().length < 6000"
-            },
-            "t": {
-              ".validate": "newData.isNumber()"
-            },
-            "$other": {
-              ".validate": false
-            }
+            "m": { ".validate": "newData.child('x').isNumber() && newData.child('z').isNumber()" },
+            "s": { ".validate": "newData.isString() && newData.val().length < 8000" },
+            "t": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
           }
         },
         "chat": {
@@ -27,6 +19,28 @@
             ".validate": "newData.hasChildren(['n','t','at','u']) && newData.child('u').val() == auth.uid && newData.child('t').isString() && newData.child('t').val().length <= 100 && newData.child('n').isString() && newData.child('n').val().length <= 16"
           }
         }
+      }
+    },
+    "saves": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && $code.length >= 12 && $code.length <= 20",
+        ".validate": "newData.hasChildren(['d','t']) && newData.child('d').isString() && newData.child('d').val().length < 30000"
+      }
+    },
+    "lb": {
+      ".read": "auth != null",
+      ".indexOn": ["xp"],
+      "$code": {
+        ".write": "auth != null && $code.length >= 12 && $code.length <= 20",
+        ".validate": "newData.child('xp').isNumber() && newData.child('n').isString() && newData.child('n').val().length <= 16"
+      }
+    },
+    "board": {
+      ".read": "auth != null",
+      "$m": {
+        ".write": "auth != null && !data.exists()",
+        ".validate": "newData.hasChildren(['n','t','at','u']) && newData.child('u').val() == auth.uid && newData.child('t').isString() && newData.child('t').val().length <= 120"
       }
     }
   }
