@@ -12,6 +12,32 @@
             "$other": { ".validate": false }
           }
         },
+        "direct": {
+          "$recipient": {
+            ".read": "auth != null && auth.uid == $recipient",
+            "$msg": {
+              ".write": "auth != null && !data.exists()",
+              ".validate": "newData.hasChildren(['u','from','to','n','t','at']) && newData.child('u').val() == auth.uid && newData.child('from').isString() && newData.child('from').val().beginsWith(auth.uid + '_') && newData.child('to').isString() && newData.child('to').val().beginsWith($recipient + '_') && newData.child('n').isString() && newData.child('n').val().length <= 16 && newData.child('t').isString() && newData.child('t').val().length > 0 && newData.child('t').val().length <= 100 && newData.child('at').isNumber() && newData.child('at').val() == now",
+              "u": { ".validate": true },
+              "from": { ".validate": true },
+              "to": { ".validate": true },
+              "n": { ".validate": true },
+              "t": { ".validate": true },
+              "at": { ".validate": true },
+              "$other": { ".validate": false }
+            }
+          }
+        },
+        "media": {
+          ".read": "auth != null",
+          ".write": "auth != null && newData.exists()",
+          ".validate": "newData.hasChildren(['id','live','at','by']) && newData.child('id').isString() && newData.child('id').val().matches(/^[A-Za-z0-9_-]{11}$/) && newData.child('live').isBoolean() && newData.child('at').isNumber() && newData.child('at').val() == now && newData.child('by').val() == auth.uid",
+          "id": { ".validate": true },
+          "live": { ".validate": true },
+          "at": { ".validate": true },
+          "by": { ".validate": true },
+          "$other": { ".validate": false }
+        },
         "chat": {
           ".read": "auth != null",
           "$msg": {
@@ -19,28 +45,6 @@
             ".validate": "newData.hasChildren(['n','t','at','u']) && newData.child('u').val() == auth.uid && newData.child('t').isString() && newData.child('t').val().length <= 100 && newData.child('n').isString() && newData.child('n').val().length <= 16"
           }
         }
-      }
-    },
-    "saves": {
-      "$code": {
-        ".read": "auth != null",
-        ".write": "auth != null && $code.length >= 12 && $code.length <= 20",
-        ".validate": "newData.hasChildren(['d','t']) && newData.child('d').isString() && newData.child('d').val().length < 30000"
-      }
-    },
-    "lb": {
-      ".read": "auth != null",
-      ".indexOn": ["xp"],
-      "$code": {
-        ".write": "auth != null && $code.length >= 12 && $code.length <= 20",
-        ".validate": "newData.child('xp').isNumber() && newData.child('n').isString() && newData.child('n').val().length <= 16"
-      }
-    },
-    "board": {
-      ".read": "auth != null",
-      "$m": {
-        ".write": "auth != null && !data.exists()",
-        ".validate": "newData.hasChildren(['n','t','at','u']) && newData.child('u').val() == auth.uid && newData.child('t').isString() && newData.child('t').val().length <= 120"
       }
     }
   }
