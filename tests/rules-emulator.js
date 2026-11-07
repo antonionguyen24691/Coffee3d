@@ -15,6 +15,13 @@ async function request(path, token, method, value) {
 }
 (async function() {
   const alice = await signup(), bob = await signup();
+  let presence = {m:{x:0,z:0},s:'{}',t:{'.sv':'timestamp'}};
+  let presenceResponse = await request('rooms/main/players/'+alice.localId+'_tab',alice.idToken,'PUT',presence);
+  assert.equal(presenceResponse.status,200,'player can write their own tab');
+  presenceResponse = await request('rooms/main/players/'+alice.localId+'other_tab',alice.idToken,'PUT',presence);
+  assert.equal(presenceResponse.status,401,'UID prefix without delimiter cannot write another player');
+  presenceResponse = await request('rooms/main/players/'+bob.localId+'_tab',alice.idToken,'PUT',presence);
+  assert.equal(presenceResponse.status,401,'player cannot write another user');
   const message = {u:alice.localId,from:alice.localId+'_a',to:bob.localId+'_b',n:'Alice',t:'hello',at:{'.sv':'timestamp'}};
   let response = await request('rooms/main/direct/'+bob.localId+'/message1',alice.idToken,'PUT',message);
   assert.equal(response.status,200,'sender can write recipient inbox');

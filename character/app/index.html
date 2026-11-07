@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Character Creator | Ara 3D Gen</title>
+    <meta name="description" content="Make a realistic 3D character in your browser: body, clothes, hair, tattoos, weapons and 77 animations. Export rigged GLB, FBX or OBJ free." />
+    <link rel="canonical" href="https://ara3dgen.com/app/" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <meta name="theme-color" content="#16181d" />
+    <!-- Link previews for shared characters (links point here). -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Ara 3D Gen" />
+    <meta property="og:title" content="I made a 3D character on Ara 3D Gen. Make yours free." />
+    <meta property="og:description" content="Open this link to see the character, tweak it and export it rigged and animated for any game engine." />
+    <meta property="og:image" content="https://ara3dgen.com/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="I made a 3D character on Ara 3D Gen. Make yours free." />
+    <meta name="twitter:description" content="Open this link to see the character, tweak it and export it rigged and animated for any game engine." />
+    <meta name="twitter:image" content="https://ara3dgen.com/og.jpg" />
+    <script type="module" crossorigin src="../assets/app-CBpLVbjd.js"></script>
+    <link rel="modulepreload" crossorigin href="../assets/export-B-SGxvLc.js">
+    <link rel="stylesheet" crossorigin href="../assets/app-D9_DF48t.css">
+  </head>
+  <body>
+    <aside id="panel">
+      <header>
+        <h1><a href="../" title="Ara 3D Gen home">Ara 3D Gen</a> <span>realistic humans</span> <a class="hdr-docs" href="../docs/" title="Documentation">Docs</a></h1>
+        <div class="row detailed-only">
+          <select id="preset"></select>
+          <button id="randomize" title="Random character">🎲 Randomize</button>
+        </div>
+        <div class="row detailed-only">
+          <label class="grow">Name <input id="name" type="text" /></label>
+          <label>Seed <input id="seed" type="number" min="0" step="1" /></label>
+        </div>
+        <div class="character-files" role="group" aria-label="Character settings"><button id="save-character" title="Download this character’s editable settings">Save character</button><button id="open-character" title="Open saved character settings">Open character</button><input id="character-settings-file" type="file" accept=".json,application/json" hidden /></div><p id="character-file-status" class="hint" role="status"></p>
+        <button id="character-assist-btn" title="Create a character with a JSON from your AI assistant">LLM Assist <span>Build from a description ↗</span></button>
+      </header>
+      <div id="controls"></div>
+    </aside>
+    <main>
+      <canvas id="viewport"></canvas>
+      <div id="loading"><span class="spin"></span><span id="loading-text">Loading character assets…</span></div>
+      <div id="busy-bar"></div>
+      <div id="stats"></div>
+      <div id="status" aria-live="polite"><span class="spin"></span><span id="status-text"></span></div>
+      <div id="view-tools">
+        <label><input type="checkbox" id="wireframe" /> Wireframe</label>
+        <label><input type="checkbox" id="skeleton" /> Skeleton</label>
+        <label><input type="checkbox" id="face" /> Face close-up</label>
+      </div>
+      <div id="anim-bar"></div>
+      <div id="export-panel" hidden></div>
+      <div id="export">
+        <button id="cafe-use" class="primary" hidden>Dùng nhân vật trong quán</button>
+        <button id="export-summary" title="Choose what to export">📦 <span id="export-summary-text">Export</span> ▾</button>
+        <button id="export-go" class="primary">⬇ Download</button>
+        <button id="studio-btn" title="Make a short film with this character">▻ Studio</button>
+        <button id="share-btn" title="Share this character">↗ Share</button>
+      </div>
+    </main>
+  </body>
+</html>

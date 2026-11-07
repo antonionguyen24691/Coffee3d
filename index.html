@@ -52,7 +52,6 @@ body.chatting #chat{bottom:68px}
 .card h2{margin:0 0 6px;font-size:18px;color:var(--gold)}
 .card p{margin:6px 0;font-size:14px;line-height:1.45;color:#f5e6cc}
 input[type=text],input[type=url],input:not([type]){width:100%;background:#fff6e6;color:#3b2316;border:0;border-radius:10px;padding:10px 12px;font-size:16px;margin:8px 0;font-family:inherit;user-select:text;-webkit-user-select:text}
-#avatarStyle{display:block;width:100%;margin:6px 0;padding:10px 12px;border:1px solid var(--gold);border-radius:10px;background:#fff6e6;color:#3b2316;font:inherit}
 .btn{display:inline-block;border:1px solid var(--gold);background:linear-gradient(#9a5a2a,#5e3014);color:#fff2d6;border-radius:10px;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
 .btn.sec{background:transparent}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center}
@@ -175,7 +174,7 @@ body.chatting #bHand,body.fighting #bHand{display:none!important}
   <div class="sp"></div>
   <button class="chip ib" id="bPeople" title="Người trong quán">👥</button>
   <button class="chip ib" id="bBag" title="Cửa hàng & túi đồ">🎒</button>
-  <button class="chip ib" id="bMe" title="Tạo nhân vật">👤</button>
+  <button class="chip ib" id="bMe" title="Nhân vật và đổi diện mạo">👤</button>
   <button class="chip ib" id="bHub" title="Trò chơi & dịch vụ">🎮</button>
   <button class="chip ib" id="bHelp" title="Hướng dẫn">❔</button>
 </div>
@@ -191,21 +190,16 @@ body.chatting #bHand,body.fighting #bHand{display:none!important}
 <div id="cbar"><input id="iChat" maxlength="100" placeholder="Nhắn nhanh cho cả quán…" autocomplete="off"><button class="btn" id="bSendC">Gửi</button><button class="btn sec" id="bCloseC">✕</button></div>
 
 <div class="modal" id="mMe"><div class="card">
-  <h2>👤 Tạo nhân vật của bạn</h2>
-  <canvas id="pv" width="480" height="540"></canvas>
-  <p style="text-align:center;font-size:12px;opacity:.7;margin:4px 0">Kéo để xoay nhân vật</p>
-  <label for="avatarStyle">Kiểu nhân vật</label>
-  <select id="avatarStyle"><option value="0">Nhân vật tùy chỉnh</option><option value="1">Người thật: nam</option><option value="2">Người thật: nữ</option><option value="3">Cosplay: cyberpunk</option></select>
-  <p style="font-size:12px;opacity:.75">Các mẫu người thật có trang phục cố định. Khi cầm đồ hoặc đấu, nhân vật sẽ tạm dùng kiểu tùy chỉnh.</p>
-  <div class="row" style="justify-content:center"><button class="btn sec" id="bRand">🎲 Ngẫu nhiên</button></div>
-  <div class="opt"><div class="lb">Phối đồ cosplay</div><div class="chips" id="cosplayPresets"></div></div>
+  <h2>👤 Nhân vật đã lưu</h2>
+  <p id="currentCharacter" style="text-align:center">Nhân vật đang dùng được giữ nguyên trên thiết bị này.</p>
+  <button type="button" class="btn" id="bDetailedAvatar" style="width:100%;margin:6px 0">Đổi nhân vật</button>
   <input id="iName" maxlength="14" placeholder="Tên hiển thị của bạn" autocomplete="off">
   <input id="iStatus" maxlength="40" placeholder="Trạng thái (vd: đang tìm bạn đọc sách 📚)" autocomplete="off">
-  <div class="tabs" id="tabs"></div>
-  <div id="opts"></div>
-  <div class="row" style="margin-top:12px"><button class="btn" id="bGo" style="flex:1">Vào quán</button></div>
+  <div class="row" style="margin-top:12px"><button class="btn" id="bGo" style="flex:1">Vào quán với nhân vật đã lưu</button></div>
   <p style="font-size:12px;opacity:.75;margin-top:10px">Đừng chia sẻ thông tin cá nhân (số điện thoại, địa chỉ, mật khẩu) trong khung chat.</p>
 </div></div>
+
+<div id="avatarEditor" hidden style="position:fixed;inset:0;z-index:10000;background:#252a33;display:none;flex-direction:column"><div style="display:flex;align-items:center;gap:12px;padding:8px 12px;color:white"><strong style="flex:1">Tạo người thật chi tiết</strong><button type="button" class="btn sec" id="bCloseAvatarEditor">Đóng</button></div><iframe id="avatarEditorFrame" title="Trình tạo người thật" style="width:100%;border:0;flex:1;min-height:0"></iframe></div>
 
 <div class="modal" id="mOrder"><div class="card">
   <h2>☕ Thực đơn</h2>
@@ -330,6 +324,7 @@ window.FIREBASE_CONFIG = {
 /* =============================== */
 </script>
 <script src="youtube.js"></script>
+<script src="wardrobe.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -343,7 +338,7 @@ window.FIREBASE_CONFIG = {
     setTimeout(function(){note(!window.firebase?'⚠️ Không tải được Firebase, đang chơi một mình.':'⚠️ Chưa dán cấu hình Firebase vào file, đang chơi một mình.');},4000);return;}
   var ROOM=(cfg.room||'main').replace(/[^a-z0-9_-]/gi,'')||'main';
   firebase.initializeApp(cfg);var db=firebase.database(),auth=firebase.auth();
-  var tab=Math.random().toString(36).slice(2,8),pid=null,pres={},hs=[],hh=[],directHandlers=[],directPending=[],snap=[],players={},lastM='',lastS='',timer=null,offset=0,lastT=0;
+  var tab=Math.random().toString(36).slice(2,8),pid=null,pres={},hs=[],hh=[],directHandlers=[],directPending=[],snap=[],players={},decoded={},lastM='',lastS='',timer=null,deliveryTimer=null,offset=0,lastT=0;
   var FAST=['x','z','w','q','y'];
   db.ref('.info/serverTimeOffset').on('value',function(s){offset=s.val()||0;});
   function flush(){timer=null;if(!pid||pres.x==null)return;
@@ -357,13 +352,15 @@ window.FIREBASE_CONFIG = {
   function deliver(val){
     var arr=[{peer:pid||'me',isMe:true,sameTab:true,kind:'viewer',guest:false,presence:pres}],now=Date.now()+offset;
     if(val)Object.keys(val).forEach(function(k){if(k===pid)return;var v=val[k];if(!v||!v.m||typeof v.s!=='string')return;if(v.t&&now-v.t>90000)return;
-      var s;try{s=JSON.parse(v.s);}catch(e){return;}if(!s||typeof s!=='object')return;
+      var entry=decoded[k];if(!entry||entry.text!==v.s){var parsed=null;try{parsed=JSON.parse(v.s);}catch(e){}entry=decoded[k]={text:v.s,value:parsed};}var s=entry.value;if(!s||typeof s!=='object')return;
       var p={};for(var a in s)p[a]=s[a];for(var b in v.m)p[b]=v.m[b];arr.push({peer:k,isMe:false,sameTab:false,kind:'viewer',guest:false,presence:p});});
     snap=arr;hs.forEach(function(h){try{h({peers:arr,joined:[],left:[],updated:[]});}catch(e){}});
   }
+  function deliverNow(){if(deliveryTimer!==null){clearTimeout(deliveryTimer);deliveryTimer=null;}deliver(players);}
+  function queueMovement(){if(deliveryTimer===null)deliveryTimer=setTimeout(function(){deliveryTimer=null;deliver(players);},50);}
   var room={
     presence:function(p){for(var k in p)pres[k]=p[k];if(!timer)timer=setTimeout(flush,200);return Promise.resolve();},
-    onPeers:function(h){hs.push(h);deliver(players);return function(){var i=hs.indexOf(h);if(i>=0)hs.splice(i,1);};},
+    onPeers:function(h){hs.push(h);deliverNow();return function(){var i=hs.indexOf(h);if(i>=0)hs.splice(i,1);};},
     onHistory:function(h){hh.push(h);},
     onDirect:function(h){directHandlers.push(h);directPending.splice(0).forEach(h);},
     postDirect:function(target,n,t){var cut=target.lastIndexOf('_'),uid=target.slice(0,cut);if(!pid||cut<1||!uid)return Promise.reject(new Error('Invalid recipient'));
@@ -385,10 +382,10 @@ window.FIREBASE_CONFIG = {
     auth.onAuthStateChanged(function(u){if(!u||pid)return;pid=u.uid+'_'+tab;
       var me=db.ref('rooms/'+ROOM+'/players/'+pid);me.onDisconnect().remove();
       var playerRef=db.ref('rooms/'+ROOM+'/players');
-      function playerChange(s){players[s.key]=s.val();deliver(players);}
+      function playerChange(s){var old=players[s.key],next=s.val();players[s.key]=next;if(s.key===pid)return;if(old&&next&&old.s===next.s)queueMovement();else deliverNow();}
       playerRef.on('child_added',playerChange,function(e){note('⚠️ Không đọc được phòng: '+(e&&e.code||e)+'. Xem lại bước dán Rules.');});
       playerRef.on('child_changed',playerChange);
-      playerRef.on('child_removed',function(s){delete players[s.key];deliver(players);});
+      playerRef.on('child_removed',function(s){delete players[s.key];delete decoded[s.key];if(s.key!==pid)deliverNow();});
       db.ref('rooms/'+ROOM+'/direct/'+u.uid).limitToLast(40).on('child_added',function(s){var m=s.val();if(!m||m.to!==pid)return;if(directHandlers.length)directHandlers.forEach(function(h){h(m);});else directPending.push(m);},function(){note('Không nhận được tin riêng. Cần cập nhật Firebase Rules.');});
       db.ref('rooms/'+ROOM+'/chat').limitToLast(40).once('value').then(function(s){var v=s.val()||{},list=Object.keys(v).map(function(k){return v[k];}).sort(function(a,b){return(a.at||0)-(b.at||0);});
         var fire=function(){if(pres.x!=null){hh.forEach(function(h){try{h(list);}catch(e){}});}else setTimeout(fire,500);};fire();}).catch(function(){});
@@ -489,7 +486,7 @@ function FR(rt,rb,h,seg,open){return G('fr'+rt+'_'+rb+'_'+h+'_'+seg+'_'+open,fun
 function TOR(r,t,arc,seg){return G('tor'+r+'_'+t+'_'+arc,function(){return new THREE.TorusGeometry(r,t,10,seg||32,arc||Math.PI*2);});}
 const matCache={};
 function M(color,o){
-  o=o||{};var k=color+'|'+(o.r==null?.6:o.r)+'|'+(o.m||0)+'|'+(o.e||'')+'|'+(o.side||0)+'|'+(o.t==null?1:o.t);
+  o=o||{};var k=color+'|'+(o.r==null?.6:o.r)+'|'+(o.m||0)+'|'+(o.e||'')+'|'+(o.ei==null?1:o.ei)+'|'+(o.side||0)+'|'+(o.t==null?1:o.t);
   if(!matCache[k]){matCache[k]=new THREE.MeshStandardMaterial({color:color,roughness:o.r==null?.6:o.r,metalness:o.m||0,emissive:o.e||'#000000',emissiveIntensity:o.ei==null?1:o.ei,side:o.side||THREE.FrontSide,transparent:o.t!=null&&o.t<1,opacity:o.t==null?1:o.t});}
   return matCache[k];
 }
@@ -762,6 +759,7 @@ function makeDrinkMesh(it){
   if(it.v==='glass'){
     add(g,FR(.058,.044,.17,24,true),glassM,0,.085,0,1,1,1,false);
     add(g,FR(.044,.044,.006),glassM,0,.003,0,1,1,1,false);
+    add(g,TOR(.057,.002,Math.PI*2,24),M('#dbe7e4',{r:.2,t:.7}),0,.169,0,1,1,1,false).rotation.x=Math.PI/2;
     var lh=.135;
     if(it.c2){add(g,FR(.05,.043,.05),M(it.c2,{r:.4}),0,.03,0);add(g,FR(.056,.05,lh-.05),M(it.c,{r:.4}),0,.015+.05+(lh-.05)/2,0);}
     else add(g,FR(.056,.043,lh),M(it.c,{r:.4}),0,.012+lh/2,0);
@@ -787,7 +785,7 @@ function makeDrinkMesh(it){
 }
 function makeFoodMesh(it,held){
   var g=new THREE.Group();if(!it)return g;
-  add(g,FR(.095,.08,.012),M('#f7f2ea',{r:.4}),0,.006,0);
+  if(!held||['croissant','cookie','baguette','puff'].indexOf(it.f)<0)add(g,FR(.095,.08,.012),M('#f7f2ea',{r:.4}),0,.006,0);
   var f=it.f,y=.012;
   if(f==='croissant'){var c=add(g,G('crois',function(){return new THREE.TorusGeometry(.05,.026,10,18,Math.PI*1.15);}),M('#d58a3a',{r:.65}),0,y+.026,0,1.05,1,.75);c.rotation.set(Math.PI/2,0,Math.PI*.9);
     [-.6,0,.6].forEach(function(a){add(g,SPH,M('#bd6f26',{r:.7}),Math.sin(a)*.05,y+.03,Math.cos(a)*-.035+.01,.02,.018,.012);});}
@@ -971,10 +969,10 @@ function buildWorld(scene,Q){
 
   /* lights */
   scene.add(new THREE.HemisphereLight('#fff0dc','#8a7058',1.0));
-  var sun=new THREE.DirectionalLight('#ffd08a',3.2);sun.position.set(-13,10,-5);sun.target.position.set(1,0,1);scene.add(sun);scene.add(sun.target);
+  var sun=new THREE.DirectionalLight('#ffdca7',2.7);sun.position.set(-13,10,-5);sun.target.position.set(1,0,1);scene.add(sun);scene.add(sun.target);
   sun.castShadow=true;sun.shadow.mapSize.set(Q.low?1024:2048,Q.low?1024:2048);var sc=sun.shadow.camera;sc.left=-17;sc.right=17;sc.top=17;sc.bottom=-17;sc.near=1;sc.far=48;sun.shadow.bias=-.0006;sun.shadow.normalBias=.04;sun.shadow.radius=3;
   W.sun=sun;
-  var fill=new THREE.DirectionalLight('#b8d4ff',.35);fill.position.set(10,6,12);scene.add(fill);
+  var fill=new THREE.DirectionalLight('#c9dcf2',.45);fill.position.set(10,6,12);scene.add(fill);
 
   /* floor + outside */
   var fl=new THREE.Mesh(new THREE.PlaneGeometry(22,26),new THREE.MeshStandardMaterial({map:texWood(5.5,6.5,56),roughness:.55}));
@@ -1096,9 +1094,9 @@ function buildWorld(scene,Q){
     var cx=0,cz=-1;
     add(root,FR(1.35,1.45,.55,40,false),M('#7a5a3a',{r:.85}),cx,.275,cz);add(root,FR(1.28,1.28,.04,40),M('#2e1e10',{r:1}),cx,.5,cz,1,1,1,false);
     var mossM=M('#4a7a3a',{r:1});add(root,FR(1.25,1.25,.03,40),mossM,cx,.52,cz,1,1,1,false);
-    for(var i=0;i<8;i++){var a=i/8*6.28;var px=cx+Math.cos(a)*1.85,pz=cz+Math.sin(a)*1.85;var seg=add(root,BOX,wood,px,.24,pz,.9,.07,.55);seg.rotation.y=-a+Math.PI/2;add(root,BOX,M('#e8d0a0',{r:.9}),px,.29,pz,.82,.05,.5).rotation.y=-a+Math.PI/2;
-      var l1=add(root,BOX,dark,px,.11,pz,.5,.22,.08);l1.rotation.y=-a+Math.PI/2;
-      seat(cx+Math.cos(a)*1.95,cz+Math.sin(a)*1.95,Math.atan2(Math.cos(a),Math.sin(a)),.3,'bench');}
+    for(var i=0;i<8;i++){var a=i/8*6.28;var px=cx+Math.cos(a)*1.85,pz=cz+Math.sin(a)*1.85;var seg=add(root,BOX,wood,px,.39,pz,.9,.07,.55);seg.rotation.y=-a+Math.PI/2;add(root,BOX,M('#e8d0a0',{r:.9}),px,.44,pz,.82,.05,.5).rotation.y=-a+Math.PI/2;
+      var l1=add(root,BOX,dark,px,.185,pz,.5,.37,.08);l1.rotation.y=-a+Math.PI/2;
+      seat(cx+Math.cos(a)*1.95,cz+Math.sin(a)*1.95,Math.atan2(Math.cos(a),Math.sin(a)),.45,'bench');}
     W.circ.push([cx,cz,1.55]);
     // trunk
     var tr=add(root,FR(.14,.24,3.2,14),M('#6a4a30',{r:.95}),cx,2.1,cz);
@@ -1730,6 +1728,7 @@ function buildExpansion(scene,W,Q){
   var rim=add(root,CYL,M('#777b6c',{r:.95}),pondX,.13,pondZ,pondRx+.3,.26,pondRz+.3);
   var water=add(root,CYL,new THREE.MeshStandardMaterial({color:'#426f69',roughness:.24,metalness:.12}),pondX,.265,pondZ,pondRx,.035,pondRz,false);
   W.pond={x:pondX,z:pondZ,rx:pondRx+.3,rz:pondRz+.3};
+  W.pondLights=[];[-4,4].forEach(function(x){add(root,CYL,M('#e9ddc2',{r:.55,e:'#d99b51',ei:.5}),x,.32,30.7,.09,.05,.09,false);var lamp=new THREE.PointLight('#ffcf91',Q.low?7:10,9,2);lamp.position.set(x,.65,30.7);root.add(lamp);W.pondLights.push([lamp,lamp.intensity]);});
   for(var pe=0;pe<36;pe++){var pa=pe*Math.PI*2/36,pr=.2+rr()*.18,px=pondX+Math.cos(pa)*(pondRx+.25),pz=pondZ+Math.sin(pa)*(pondRz+.25);
     var edgeStone=add(root,SPH,M(pe%3?'#85877a':'#a5a69a',{r:.95}),px,.22,pz,pr,.13+rr()*.1,pr*.8);edgeStone.rotation.y=pa;}
   [[-3.7,32],[-3.2,35.7],[3.7,32.5],[3.2,36]].forEach(function(p,i){var pad=add(root,CYL,M('#518453',{r:.75}),p[0],.305,p[1],.35,.018,.27,false);pad.rotation.y=i;
@@ -1971,30 +1970,37 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function fail(msg){var l=$('loading');if(l){l.innerHTML='<div class="cup">😢</div><div style="max-width:300px;text-align:center;font-size:14px;line-height:1.5"></div>';l.lastChild.textContent=msg;}}
 if(typeof THREE==='undefined'){fail('Không tải được thư viện 3D. Hãy kiểm tra kết nối mạng rồi tải lại trang.');return;}
-var low=/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)||window.innerWidth<700||(navigator.hardwareConcurrency||8)<=4;
+var cores=navigator.hardwareConcurrency||8,memory=navigator.deviceMemory||0,low=/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)||window.innerWidth<700||cores<=4||!!(memory&&memory<=4),ultraLow=cores<=2||!!(memory&&memory<=2);
 window.__gameStarted=true;
 var renderer;
-try{renderer=new THREE.WebGLRenderer({canvas:$('game'),antialias:true,powerPreference:'high-performance'});}catch(e){fail('Thiết bị hoặc trình duyệt này không hỗ trợ 3D (WebGL).');return;}
-var FX=window.FX||null,QL=low?1:2,QF=/[?&]q=(\d)/.exec(location.search);if(QF)QL=+QF[1];var qLock=!!QF;var qDown=false,qUp=0,comp=null;
+try{renderer=new THREE.WebGLRenderer({canvas:$('game'),antialias:!low,powerPreference:'high-performance'});}catch(e){fail('Thiết bị hoặc trình duyệt này không hỗ trợ 3D (WebGL).');return;}
+var FX=window.FX||null,QL=ultraLow?0:low?1:2,QF=/[?&]q=(\d)/.exec(location.search);if(QF)QL=clamp(+QF[1],0,2);var qLock=!!QF;var qUp=0,comp=null;
 var SEE={value:new THREE.Vector4(0,0,0,0)};
 var SEE_GLSL='{float sdd=length(vViewPosition);float sfa=smoothstep(.7,1.8,sdd);'+
  'if(uSee.w>.5){vec3 sfp=-vViewPosition;float sfz=-sfp.z,spz=-uSee.z;vec3 swn=(vec4(normal,0.)*viewMatrix).xyz;'+
  'if(sfz<spz-.9&&swn.y<.75){vec2 sa=sfp.xy/sfz,sb=uSee.xy/spz;float sr=length((sa-sb)*vec2(1.,1.25));sfa=min(sfa,mix(.18,1.,smoothstep(.1,.24,sr)));}}'+
  'if(sfa<.999){float sh=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(.06711056,.00583715))));if(sh>sfa)discard;}}';
-if(!/nosee/.test(location.search))THREE.MeshStandardMaterial.prototype.onBeforeCompile=function(sh){
+if(!low&&!/nosee/.test(location.search))THREE.MeshStandardMaterial.prototype.onBeforeCompile=function(sh){
   if(!this.userData.envSet){this.userData.envSet=1;this.envMapIntensity=(this.envMapIntensity||1)*.32;}
   sh.uniforms.uSee=SEE;
   sh.fragmentShader=sh.fragmentShader.replace('void main() {','uniform vec4 uSee;\nvoid main() {').replace('#include <normal_fragment_maps>','#include <normal_fragment_maps>\n'+SEE_GLSL);
 };
 renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.95;
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=low?THREE.PCFShadowMap:THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled=true;renderer.shadowMap.autoUpdate=false;renderer.shadowMap.type=low?THREE.PCFShadowMap:THREE.PCFSoftShadowMap;
 var scene=new THREE.Scene();scene.background=new THREE.Color('#e9cf9a');scene.fog=new THREE.Fog('#e9cf9a',45,130);
+var environmentTarget=null,roomEnvironmentAllowed=!/noenv/.test(location.search);
+function syncQualityResources(){
+  var useEnvironment=QL>=2&&roomEnvironmentAllowed&&FX&&FX.RoomEnvironment;
+  if(useEnvironment&&!environmentTarget){var pm=new THREE.PMREMGenerator(renderer),room=new FX.RoomEnvironment(renderer);try{environmentTarget=pm.fromScene(room,.04);scene.environment=environmentTarget.texture;}catch(error){console.warn('Room reflections disabled',error);}finally{if(room.dispose)room.dispose();pm.dispose();}}
+  else if(!useEnvironment&&environmentTarget){scene.environment=null;environmentTarget.dispose();environmentTarget=null;}
+  if(W&&W.sun){var shadowSize=QL>=2?(low?1024:2048):512;if(W.sun.shadow.mapSize.x!==shadowSize||W.sun.shadow.mapSize.y!==shadowSize)W.sun.shadow.mapSize.set(shadowSize,shadowSize);}
+}
 var camera=new THREE.PerspectiveCamera(42,1,.1,300);
 var vw=0,vh=0;
-function dpr(){var d=window.devicePixelRatio||1;return QL>=2?Math.min(d,low?1.75:2):QL===1?Math.min(d,1.5):1;}
+function dpr(){var d=window.devicePixelRatio||1;return QL>=2?Math.min(d,low?1.75:2):QL===1?Math.min(d,1.25):Math.min(d,.85);}
 function resize(){vw=window.innerWidth;vh=window.innerHeight;var pr=dpr();renderer.setPixelRatio(pr);renderer.setSize(vw,vh,false);camera.aspect=vw/vh;camera.updateProjectionMatrix();
   if(comp){comp.setPixelRatio(pr);comp.setSize(vw,vh);}}
-function setQuality(q){QL=q;if(QL>=2&&FX&&!comp){try{var rt=new THREE.WebGLRenderTarget(4,4,{type:THREE.HalfFloatType,samples:4});comp=new FX.EffectComposer(renderer,rt);comp.addPass(new FX.RenderPass(scene,camera));
+function setQuality(q){var previous=QL;QL=q;renderer.shadowMap.enabled=QL>0;syncQualityResources();renderer.shadowMap.needsUpdate=QL>0;shadowAcc=0;if(previous!==QL)scheduleAvatarTierRefresh();if(QL>=2&&FX&&!comp){try{var rt=new THREE.WebGLRenderTarget(4,4,{type:THREE.HalfFloatType,samples:4});comp=new FX.EffectComposer(renderer,rt);comp.addPass(new FX.RenderPass(scene,camera));
     comp.addPass(new FX.UnrealBloomPass(new THREE.Vector2(256,256),.32,.55,.82));comp.addPass(new FX.OutputPass());}catch(e){comp=null;}}
   if(QL<2&&comp){try{comp.dispose&&comp.dispose();}catch(e){}comp=null;}resize();}
 window.addEventListener('resize',resize);
@@ -2013,19 +2019,20 @@ function eqArr(){return[SV.eq.w,SV.eq.b,SV.eq.p,SV.eq.h];}
 /* ---------- state ---------- */
 var me={name:'Khách',x:0,z:10,yaw:Math.PI,seat:-1,d:0,f:0,dt:0,mu:[0,0],tv:[0,0],ms:[],pm:[],gf:[],em:null,ap:defaultAp(),moving:false,bub:null,wave:0,hp:100,at:[0,0],bk:0,ch:null,ac:null,dc:null,fg:null,sp:[0,''],sipN:0,biteN:0,y:0};
 try{var sa=cleanAp(JSON.parse(localStorage.getItem('cafe3d_ap')||'null'));if(sa)me.ap=sa;}catch(e){}
-try{var savedStyle=Number(localStorage.getItem('cafe3d_avatar_style'));me.avatarStyle=savedStyle===1||savedStyle===2||savedStyle===3?savedStyle:0;}catch(e){me.avatarStyle=0;}
+function cleanAvatarRecipe(v){return typeof v==='string'&&v.length<=3500&&/^[A-Za-z0-9_-]+$/.test(v)?v:'';}
+try{me.avatarRecipe=cleanAvatarRecipe(localStorage.getItem('cafe3d_avatar_recipe'));var savedStyleRaw=localStorage.getItem('cafe3d_avatar_style'),savedStyle=Number(savedStyleRaw);me.avatarStyle=savedStyleRaw===null||savedStyleRaw==='0'?1:(Number.isInteger(savedStyle)&&savedStyle>=1&&savedStyle<=5&&(savedStyle!==5||me.avatarRecipe)?savedStyle:1);}catch(e){me.avatarStyle=1;me.avatarRecipe='';}
+try{me.wardrobe=Wardrobe.clean(JSON.parse(localStorage.getItem('cafe3d_wardrobe')||'null'));}catch(e){me.wardrobe=Wardrobe.clean(null);}
 var started=false,joinedAt=0,muted=false,seq=Math.floor(Math.random()*100000),emoSeq=0,myPeer='';
 var peers=new Map(),room=null,lastAct=0,lastChat=0,T=0;
 var EMOJ=['👋','❤️','😂','🎉','😴','💃','👏','💢'];
 function loadName(){try{return localStorage.getItem('cafe3d_name')||'';}catch(e){return'';}}
-function saveName(n){try{localStorage.setItem('cafe3d_name',n);localStorage.setItem('cafe3d_ap',JSON.stringify(me.ap));localStorage.setItem('cafe3d_avatar_style',String(me.avatarStyle));}catch(e){}}
+function saveName(n){try{localStorage.setItem('cafe3d_name',n);localStorage.setItem('cafe3d_ap',JSON.stringify(me.ap));localStorage.setItem('cafe3d_avatar_style',String(me.avatarStyle));localStorage.setItem('cafe3d_avatar_recipe',me.avatarRecipe);localStorage.setItem('cafe3d_wardrobe',JSON.stringify(me.wardrobe));}catch(e){}}
 
 /* ---------- world ---------- */
 var W;
 try{W=buildWorld(scene,{low:low});}catch(e){fail('Lỗi dựng quán: '+(e&&e.message||e));throw e;}
 try{buildExpansion(scene,W,{low:low});}catch(e){console.error('expansion',e);}
 var SEATS=W.seats,HOT=W.hot;
-if(FX&&FX.RoomEnvironment&&!/noenv/.test(location.search)){try{var pm=new THREE.PMREMGenerator(renderer);scene.environment=pm.fromScene(new FX.RoomEnvironment(renderer),.04).texture;}catch(e){}}
 (function(){var ma=Math.min(8,renderer.capabilities.getMaxAnisotropy());scene.traverse(function(o){if(o.material&&o.material.map)o.material.map.anisotropy=ma;});})();
 setQuality(QL);
 var barista=buildChar([3,0,0,1,0,1,0,2,1,0,4,0,1,1,1,0,0,0,0,0,2]);barista.root.position.set(W.barista.x,0,W.barista.z);scene.add(barista.root);
@@ -2095,22 +2102,63 @@ var baristaSay='',baristaUntil=0;
 HOT.forEach(function(h){var e=document.createElement('div');e.className='poi';e.textContent=h.icon;$('tags').appendChild(e);h.poi=e;});
 
 /* ---------- entity (character + equipment) ---------- */
-var realAssetPromises={};
-function clearRealAvatar(rig){if(!rig.real)return;rig.real.mixer.stopAllAction();rig.real.mixer.uncacheRoot(rig.real.root);rig.real.root.traverse(function(o){if(o.isSkinnedMesh&&o.skeleton)o.skeleton.dispose();});rig.root.remove(rig.real.root);rig.real=null;}
-function useRealAvatar(rig,style){style=style===1||style===2||style===3?style:0;rig.wantReal=style;
-  if(rig.real&&rig.real.style!==style){clearRealAvatar(rig);rig.body.visible=true;}
+var avatarRigs=new Set(),avatarTierRefreshQueue=[],avatarTierRefreshTimer=0;
+function currentAvatarTextureTier(){return QL===0?512:QL===1?1024:2048;}
+function realAvatarAsset(style){var names=['','asian-casual.glb','asian-casual-woman.glb','cyberpunk.glb','adventurer.glb'],tier=currentAvatarTextureTier(),name=names[style];return {tier:tier,key:'builtin:'+style+':'+tier,path:'assets/avatars/'+(tier===2048?'':'q'+tier+'/')+name};}
+function scheduleAvatarTierRefresh(){if(avatarTierRefreshTimer)clearTimeout(avatarTierRefreshTimer);avatarTierRefreshQueue=avatarRigs?Array.from(avatarRigs):[];if(builtinAvatarCache)builtinAvatarCache.pruneIdle();function next(){avatarTierRefreshTimer=0;var rig=null;while(avatarTierRefreshQueue.length&&!rig){var candidate=avatarTierRefreshQueue.shift();if(candidate&&!candidate.dead&&candidate.real&&candidate.wantReal&&candidate.real.style!==5&&candidate.real.textureTier!==currentAvatarTextureTier())rig=candidate;}if(!rig)return;useRealAvatar(rig,rig.wantReal,rig.wantRecipe);if(builtinAvatarCache)builtinAvatarCache.pruneIdle();if(avatarTierRefreshQueue.length)avatarTierRefreshTimer=setTimeout(next,900);}if(avatarTierRefreshQueue.length)next();}
+function avatarJobError(code){var error=new Error(code==='AVATAR_UNUSED'?'Model không còn được sử dụng':'Hàng đợi tạo model đang đầy');error.code=code;return error;}
+function createAvatarBuildQueue(maxWaiting){
+  var waiting=[],running=false;
+  function prune(){waiting=waiting.filter(function(job){if(job.wanted())return true;job.reject(avatarJobError('AVATAR_UNUSED'));return false;});}
+  function pump(){if(running)return;prune();if(!waiting.length)return;var i=waiting.findIndex(function(job){return job.priority();});var job=waiting.splice(i<0?0:i,1)[0];running=true;Promise.resolve().then(function(){return job.work(job.wanted);}).then(function(value){running=false;job.resolve(value);pump();},function(error){running=false;job.reject(error);pump();});}
+  function enqueue(work,wanted,priority){return new Promise(function(resolve,reject){prune();if(waiting.length>=maxWaiting){var i=priority()?waiting.findIndex(function(job){return !job.priority();}):-1;if(i<0){reject(avatarJobError('AVATAR_QUEUE_FULL'));return;}waiting.splice(i,1)[0].reject(avatarJobError('AVATAR_QUEUE_FULL'));}waiting.push({work:work,wanted:wanted,priority:priority,resolve:resolve,reject:reject});pump();});}
+  return {enqueue:enqueue};
+}
+var avatarBuildQueue=createAvatarBuildQueue(12);
+function createAvatarCache(limit,dispose){
+  var entries=new Map(),clock=0;
+  function trim(){var idle=Array.from(entries.values()).filter(function(e){return e.refs===0&&e.ready;}).sort(function(a,b){return a.used-b.used;});while(entries.size>limit&&idle.length){var e=idle.shift();entries.delete(e.key);dispose(e.value);}}
+  function acquire(key,load,priority){var entry=entries.get(key);if(!entry){entry={key:key,refs:0,priorityRefs:0,used:0,ready:false,value:null};entries.set(key,entry);entry.promise=Promise.resolve().then(function(){return load(function(){return entry.refs>0;},function(){return entry.priorityRefs>0;});}).then(function(value){entry.value=value;entry.ready=true;trim();return value;},function(err){if(entries.get(key)===entry)entries.delete(key);throw err;});}entry.refs++;if(priority)entry.priorityRefs++;entry.used=++clock;var released=false;return{key:key,promise:entry.promise,release:function(){if(released)return;released=true;entry.refs--;if(priority)entry.priorityRefs--;entry.used=++clock;trim();}};}
+  function pruneIdle(){entries.forEach(function(entry,key){if(entry.refs===0&&entry.ready){entries.delete(key);dispose(entry.value);}});}
+  return {acquire:acquire,pruneIdle:pruneIdle};
+}
+function disposeAvatarAsset(asset){var geometries=new Set(),materials=new Set(),textures=new Set(),skeletons=new Set();asset.scene.traverse(function(o){if(o.geometry)geometries.add(o.geometry);if(o.skeleton)skeletons.add(o.skeleton);(Array.isArray(o.material)?o.material:o.material?[o.material]:[]).forEach(function(m){materials.add(m);Object.values(m).forEach(function(v){if(v&&v.isTexture)textures.add(v);});});});skeletons.forEach(function(s){s.dispose();});geometries.forEach(function(g){g.dispose();});materials.forEach(function(m){m.dispose();});textures.forEach(function(t){if(t.image&&typeof t.image.close==='function')t.image.close();t.dispose();});}
+var customAvatarCache=createAvatarCache(low?4:12,disposeAvatarAsset);
+var builtinAvatarCache=createAvatarCache(low?2:4,disposeAvatarAsset);
+function clearRealAvatar(rig){if(rig.real){rig.real.mixer.stopAllAction();rig.real.mixer.uncacheRoot(rig.real.root);rig.real.root.traverse(function(o){if(o.isSkinnedMesh&&o.skeleton)o.skeleton.dispose();if(o.userData.wardrobeMaterials)o.userData.wardrobeMaterials.forEach(function(m){m.dispose();});});Object.values(rig.real.held).forEach(function(item){if(item)rig.root.remove(item.wrapper);});rig.root.remove(rig.real.root);rig.real=null;}if(rig.assetLease){rig.assetLease.release();rig.assetLease=null;}}
+function applyWardrobe(rig,selection){rig.wardrobe=Wardrobe.clean(selection);if(!rig.real)return;rig.real.root.traverse(function(o){(o.userData.wardrobeMaterials||[]).forEach(function(m){m.color.copy(m.userData.originalColor);Wardrobe.slots.forEach(function(slot,i){if(Wardrobe.targets(rig.real.style,slot).indexOf(m.name)<0)return;var color=Wardrobe.palette[rig.wardrobe[i]].color;if(color)m.color.multiply(new THREE.Color(color));});});});}
+function useRealAvatar(rig,style,recipe){recipe=cleanAvatarRecipe(recipe);style=Number.isInteger(style)&&style>=1&&style<=5&&(style!==5||recipe)?style:0;rig.wantReal=style;rig.wantRecipe=style===5?recipe:'';
+  var assetInfo=style&&style!==5?realAvatarAsset(style):null,textureTier=assetInfo?assetInfo.tier:0,assetKey=style===5?'custom:'+recipe:assetInfo?assetInfo.key:'';if(style)avatarRigs.add(rig);else avatarRigs.delete(rig);
+  if((rig.real&&(rig.real.style!==style||rig.real.recipe!==rig.wantRecipe||rig.real.textureTier!==textureTier))||(rig.assetLease&&rig.assetLease.key!==assetKey)){clearRealAvatar(rig);rig.body.visible=true;}
   if(!style||rig.real)return;
-  if(!realAssetPromises[style])realAssetPromises[style]=new GLTFLoader().loadAsync(['','assets/avatars/asian-casual.glb','assets/avatars/asian-casual-woman.glb','assets/avatars/cyberpunk.glb'][style]);
-  realAssetPromises[style].then(function(asset){if(rig.dead||rig.wantReal!==style||rig.real)return;var root=cloneSkeleton(asset.scene),mixer=new THREE.AnimationMixer(root),actions={};
-    asset.animations.forEach(function(clip){actions[clip.name]=mixer.clipAction(clip);});root.visible=false;rig.root.add(root);rig.real={root:root,mixer:mixer,actions:actions,current:null,style:style};
-  }).catch(function(error){delete realAssetPromises[style];if(!rig.dead&&rig.wantReal===style){rig.wantReal=0;rig.body.visible=true;toast('Không tải được mẫu người thật. Đang dùng nhân vật tùy chỉnh.');}console.error('Avatar model failed to load',error);});
+  rig.retryAvatarAt=0;
+  var lease=null,promise;if(style===5){if(rig.assetLease)return;lease=customAvatarCache.acquire(assetKey,function(wanted,priority){return avatarBuildQueue.enqueue(function(isWanted){return import('./character/cafe-generator.js').then(function(gen){if(!isWanted())throw avatarJobError('AVATAR_UNUSED');return gen.buildAvatar(recipe,new URL('character/assets/',location.href).href);}).then(function(data){if(!isWanted())throw avatarJobError('AVATAR_UNUSED');return new GLTFLoader().parseAsync(data,'');});},wanted,priority);},!rig.isRemote);rig.assetLease=lease;promise=lease.promise;}else{lease=builtinAvatarCache.acquire(assetKey,function(){return new GLTFLoader().loadAsync(assetInfo.path);},!rig.isRemote);rig.assetLease=lease;promise=lease.promise;}
+  promise.then(function(asset){if(rig.dead||rig.wantReal!==style||rig.wantRecipe!==(style===5?recipe:'')||(lease&&rig.assetLease!==lease)||rig.real)return;if(style!==5&&currentAvatarTextureTier()!==textureTier){clearRealAvatar(rig);if(builtinAvatarCache)builtinAvatarCache.pruneIdle();useRealAvatar(rig,style,recipe);return;}var root=cloneSkeleton(asset.scene),mixer=new THREE.AnimationMixer(root),actions={};
+    asset.animations.forEach(function(clip){actions[clip.name]=mixer.clipAction(clip);});root.traverse(function(o){if(!o.isMesh||!o.material)return;var originals=Array.isArray(o.material)?o.material:[o.material],copies=originals.map(function(m){var c=m.clone();c.userData.originalColor=m.color.clone();return c;});o.material=Array.isArray(o.material)?copies:copies[0];o.userData.wardrobeMaterials=copies;o.castShadow=true;o.receiveShadow=true;});root.visible=false;rig.root.add(root);rig.real={root:root,mixer:mixer,actions:actions,current:null,style:style,textureTier:textureTier,hands:{drink:root.getObjectByName('RightHand'),food:root.getObjectByName('LeftHand')},arms:{drink:[root.getObjectByName('RightForeArm'),root.getObjectByName('RightArm')],food:[root.getObjectByName('LeftForeArm'),root.getObjectByName('LeftArm')]},head:root.getObjectByName('Head'),hips:root.getObjectByName('Hips'),held:{drink:null,food:null}};applyWardrobe(rig,rig.wardrobe);if(DN&&DN.n>=0)applyNightMaterials(root,DN.n);
+    rig.real.recipe=style===5?recipe:'';
+  }).catch(function(error){var current=!rig.dead&&rig.wantReal===style&&rig.wantRecipe===(style===5?recipe:'')&&(!lease||rig.assetLease===lease);if(current){clearRealAvatar(rig);rig.wantReal=0;avatarRigs.delete(rig);rig.body.visible=true;if(error.code==='AVATAR_QUEUE_FULL'&&rig.isRemote)rig.retryAvatarAt=performance.now()+2000;else if(!rig.isRemote)toast('Không tải được mẫu người thật. Đang dùng nhân vật tùy chỉnh.');}if(error.code!=='AVATAR_UNUSED'&&error.code!=='AVATAR_QUEUE_FULL')console.error('Avatar model failed to load',error);});
 }
-function updateRealAvatar(rig,dt,state,fallback){if(!rig.real)return;var show=rig.wantReal&&!fallback;rig.body.visible=!show;rig.real.root.visible=show;if(!show)return;
+var heldWorld=new THREE.Vector3();
+var ikHead=new THREE.Vector3(),ikHips=new THREE.Vector3(),ikArm=new THREE.Vector3(),ikTarget=new THREE.Vector3(),ikOrigin=new THREE.Vector3(),ikCurrent=new THREE.Vector3(),ikFrom=new THREE.Vector3(),ikTo=new THREE.Vector3(),ikParentQ=new THREE.Quaternion(),ikDelta=new THREE.Quaternion();
+function realHeldSources(rig,state){return {drink:state.fight?(state.weapon||null):(rig.heldD||null),food:state.fight?null:(rig.heldF||state.toy||null)};}
+function realCombatReach(action){if(!action||action.k!=='atk'||!action.d||action.t>=action.d)return 0;return Math.sin(Math.PI*Math.max(0,action.t)/action.d);}
+function poseRealHand(rig,key,sip,combat,reach){var real=rig.real,hand=real.hands[key],joints=real.arms[key];if(!hand||!real.head||!real.hips||!joints[0]||!joints[1])return;
+  real.head.getWorldPosition(ikHead);real.hips.getWorldPosition(ikHips);joints[1].getWorldPosition(ikArm);rig.root.worldToLocal(ikHead);rig.root.worldToLocal(ikHips);rig.root.worldToLocal(ikArm);
+  if(combat)ikTarget.set(ikHead.x+(ikArm.x-ikHead.x)*.55,ikHips.y+(ikHead.y-ikHips.y)*.65,ikHead.z+.18+(key==='drink'?.32*reach:0));
+  else ikTarget.set(ikHead.x+(ikArm.x-ikHead.x)*(.65-.5*sip),ikHips.y+(ikHead.y-ikHips.y)*(.43+.45*sip),ikHead.z+.18);
+  rig.root.localToWorld(ikTarget);
+  for(var pass=0;pass<3;pass++)joints.forEach(function(joint){joint.getWorldPosition(ikOrigin);hand.getWorldPosition(ikCurrent);ikFrom.subVectors(ikCurrent,ikOrigin);ikTo.subVectors(ikTarget,ikOrigin);if(ikFrom.lengthSq()<.000001||ikTo.lengthSq()<.000001)return;ikDelta.setFromUnitVectors(ikFrom.normalize(),ikTo.normalize());joint.parent.getWorldQuaternion(ikParentQ);ikDelta.premultiply(ikParentQ.invert());joint.parent.getWorldQuaternion(ikParentQ);ikDelta.multiply(ikParentQ);joint.quaternion.premultiply(ikDelta);joint.updateWorldMatrix(false,true);});
+}
+function updateRealHeld(rig,show,state){var real=rig.real,sources=realHeldSources(rig,state);['drink','food'].forEach(function(key){var source=sources[key],entry=real.held[key],bone=real.hands[key];if(entry&&entry.source!==source){rig.root.remove(entry.wrapper);real.held[key]=entry=null;}if(source&&bone&&!entry){var wrapper=new THREE.Group(),copy=source.clone(true);copy.visible=true;copy.rotation.set(state.fight&&key==='drink'?Math.PI/2:0,0,0);wrapper.add(copy);rig.root.add(wrapper);real.held[key]=entry={source:source,wrapper:wrapper};}if(!entry)return;entry.wrapper.visible=!!show;if(show){bone.getWorldPosition(heldWorld);rig.root.worldToLocal(heldWorld);entry.wrapper.position.copy(heldWorld);}});}
+function updateRealAvatar(rig,dt,state,fallback){if(!rig.real)return;var sources=realHeldSources(rig,state),show=rig.wantReal&&!fallback&&(!sources.drink||rig.real.hands.drink)&&(!sources.food||rig.real.hands.food);rig.body.visible=!show;rig.real.root.visible=show;if(!show){updateRealHeld(rig,false,state);return;}
+  // The sitting clips have different hip heights; align each model to the seat.
+  var seatedHip=[0,.497,.464,.460,.546,.497][rig.real.style];rig.real.root.position.y=state.sit?HIP_Y-seatedHip:0;
   var name=state.sit?'Sit idle (chair)':state.wave?'Wave':state.moving?'Walk':'Idle',action=rig.real.actions[name];
-  if(action&&rig.real.current!==action){if(rig.real.current)rig.real.current.fadeOut(.18);action.reset().fadeIn(.18).play();rig.real.current=action;}rig.real.mixer.update(dt);
+  if(action&&rig.real.current!==action){if(rig.real.current)rig.real.current.fadeOut(.18);action.reset().fadeIn(.18).play();rig.real.current=action;}rig.real.mixer.update(dt);if(sources.drink||sources.food||state.fight){rig.real.root.updateWorldMatrix(true,true);var sip=state.sipT>0?Math.sin((1-Math.min(1,state.sipT/1.2))*Math.PI):0,reach=realCombatReach(state.action);if(sources.drink||state.fight)poseRealHand(rig,'drink',state.sipK==='d'?sip:0,state.fight,reach);if(sources.food||state.fight)poseRealHand(rig,'food',state.sipK==='f'?sip:0,state.fight,reach);updateRealHeld(rig,true,state);}else updateRealHeld(rig,false,state);
 }
-function newEnt(ap,style){var e={rig:buildChar(ap),avatarStyle:style===1||style===2||style===3?style:0,act:null,eqKey:'',w:null,b:null,pet:null,petId:'',toy:null,wId:'',bId:'',tId:''};scene.add(e.rig.root);useRealAvatar(e.rig,e.avatarStyle);return e;}
-function dropEnt(e){e.rig.dead=true;clearRealAvatar(e.rig);scene.remove(e.rig.root);if(e.pet)scene.remove(e.pet);}
+barista.wardrobe=Wardrobe.clean(null);var baristaRealRequested=false;
+function newEnt(ap,style,wardrobe,recipe,deferred){var e={rig:buildChar(ap),avatarStyle:Number.isInteger(style)&&style>=1&&style<=5?style:0,avatarRecipe:cleanAvatarRecipe(recipe),deferred:!!deferred,loadRequested:false,act:null,eqKey:'',w:null,b:null,pet:null,petId:'',toy:null,wId:'',bId:'',tId:''};e.rig.isRemote=e.deferred;e.rig.wardrobe=Wardrobe.clean(wardrobe);scene.add(e.rig.root);if(!e.deferred)useRealAvatar(e.rig,e.avatarStyle,e.avatarRecipe);return e;}
+function dropEnt(e){e.rig.dead=true;avatarRigs.delete(e.rig);clearRealAvatar(e.rig);scene.remove(e.rig.root);if(e.pet)scene.remove(e.pet);}
 function applyEquip(e,eq,fighting){
   var rig=e.rig,w=fighting?eq[0]:'',b=eq[1],p=eq[2],h=(!rig.heldF&&!fighting)?eq[3]:'';
   if(w!==e.wId){if(e.w)rig.armR.hand.remove(e.w);e.w=null;e.wId=w;if(w&&ITEM[w]){e.w=makeItemMesh(w);e.w.position.set(0,-.02,.02);e.w.rotation.x=Math.PI/2;rig.armR.hand.add(e.w);}}
@@ -2120,7 +2168,7 @@ function applyEquip(e,eq,fighting){
   if(rig.heldD)rig.heldD.visible=!fighting;
   rig.hasD=!!rig.heldD&&!fighting;rig.hasF=!!rig.heldF||!!e.toy;
 }
-function rebuildEnt(e,ap){var eqk=[e.wId,e.bId,e.petId,e.tId],style=e.avatarStyle;dropEnt(e);var n=newEnt(ap,style);for(var k in n)e[k]=n[k];return eqk;}
+function rebuildEnt(e,ap){var eqk=[e.wId,e.bId,e.petId,e.tId],style=e.avatarStyle,wardrobe=e.rig.wardrobe,recipe=e.avatarRecipe,deferred=e.deferred;dropEnt(e);var n=newEnt(ap,style,wardrobe,recipe,deferred);for(var k in n)e[k]=n[k];return eqk;}
 function petUpdate(e,dt,x,z,yaw,moving,sit){
   if(e.pet&&e.oy!=null)e.pet.position.y+=(e.oy-e.pet.position.y)*Math.min(1,dt*10);
   if(!e.pet)return;var p=e.pet,s=sit?.9:1.0;
@@ -2157,68 +2205,26 @@ function postAnim(e,dt,ko,blk){
 }
 function playEmoteAnim(e,k){if(k===0)return;if(k===5)e.act={k:'dance',t:0,d:4};else if(k===6)e.act={k:'clap',t:0,d:2.2};else if(k===7)e.act={k:'angry',t:0,d:1.6};}
 
-var mine=newEnt(me.ap,me.avatarStyle);applyEquip(mine,eqArr(),false);
-function setMyRig(){mine.avatarStyle=me.avatarStyle;var eqk=rebuildEnt(mine,me.ap);mine.wId=mine.bId=mine.petId=mine.tId='';setHeld(mine.rig,me.d,me.f);applyEquip(mine,eqArr(),!!F);}
+var mine=newEnt(me.ap,me.avatarStyle,me.wardrobe,me.avatarRecipe);applyEquip(mine,eqArr(),false);
+function setMyRig(){mine.avatarStyle=me.avatarStyle;mine.avatarRecipe=me.avatarRecipe;mine.rig.wardrobe=me.wardrobe;var eqk=rebuildEnt(mine,me.ap);mine.wId=mine.bId=mine.petId=mine.tId='';setHeld(mine.rig,me.d,me.f);applyEquip(mine,eqArr(),!!F);}
 
-/* ---------- creator ---------- */
-var TABS=[
- {n:'Mặt',o:[['sw','Màu da',0,SKIN],['ch','Khuôn mặt',1,OPT.face],['ch','Mắt',2,OPT.eyes],['ch','Lông mày',3,OPT.brows],['ch','Miệng',4,OPT.mouth],['ch','Má hồng',5,['Không','Có']],['ch','Tàn nhang',6,['Không','Có']],['ch','Chiều cao',20,OPT.height]]},
- {n:'Tóc',o:[['ch','Kiểu tóc',7,OPT.hair],['sw','Màu tóc',8,HAIRC]]},
- {n:'Quần áo',o:[['ch','Áo',9,OPT.top],['sw','Màu áo',10,CLOTH],['ch','Quần / váy',11,OPT.bottom],['sw','Màu quần / váy',12,CLOTH],['ch','Giày',13,OPT.shoes],['sw','Màu giày',14,ACC]]},
- {n:'Phụ kiện',o:[['ch','Mũ',15,OPT.hat],['sw','Màu mũ',16,ACC],['ch','Kính',17,OPT.glasses],['ch','Đồ khác',18,OPT.extra],['sw','Màu đồ khác',19,ACC]]}
-];
-var curTab=0,pvRen=null,pvScene,pvCam,pvRig=null,pvYaw=.5,pvDrag=false,pvOn=false,pvLast=0,pvT=0;
-var COSPLAY=[
-  {name:'Mèo hồng',values:{2:3,7:8,8:8,9:2,10:7,11:2,12:0,13:1,14:0,15:7,16:7,17:0,18:0}},
-  {name:'Học đường',values:{2:0,7:3,8:1,9:1,10:0,11:2,12:1,13:1,14:1,15:0,17:2,18:3,19:1}},
-  {name:'Lễ hội Việt',values:{2:1,7:3,8:0,9:6,10:2,11:3,12:0,13:3,14:0,15:1,16:0,17:0,18:0}}
-];
-COSPLAY.forEach(function(p){var b=document.createElement('button');b.type='button';b.className='cp';b.textContent=p.name;b.onclick=function(){me.avatarStyle=0;$('avatarStyle').value='0';Object.keys(p.values).forEach(function(k){me.ap[Number(k)]=p.values[k];});renderTabs();rebuildPreview();};$('cosplayPresets').appendChild(b);});
-var cyberPreset=document.createElement('button');cyberPreset.type='button';cyberPreset.className='cp';cyberPreset.textContent='Cyberpunk 3D';cyberPreset.onclick=function(){me.avatarStyle=3;$('avatarStyle').value='3';rebuildPreview();};$('cosplayPresets').appendChild(cyberPreset);
-function initPreview(){
-  if(pvRen)return;
-  try{pvRen=new THREE.WebGLRenderer({canvas:$('pv'),antialias:true,alpha:true});}catch(e){pvRen=null;return;}
-  pvRen.outputColorSpace=THREE.SRGBColorSpace;pvRen.toneMapping=THREE.ACESFilmicToneMapping;pvRen.setPixelRatio(2);pvRen.setSize(240,270,false);
-  pvScene=new THREE.Scene();pvScene.add(new THREE.HemisphereLight('#fff2dd','#8a7a60',1.5));var dl=new THREE.DirectionalLight('#ffe6c0',2.6);dl.position.set(2,4,5);pvScene.add(dl);var rl=new THREE.DirectionalLight('#9ad0ff',1.0);rl.position.set(-3,2,-4);pvScene.add(rl);
-  var disc=new THREE.Mesh(new THREE.CircleGeometry(.9,40),new THREE.MeshBasicMaterial({color:'#000',transparent:true,opacity:.25}));disc.rotation.x=-Math.PI/2;disc.position.y=.005;pvScene.add(disc);
-  pvCam=new THREE.PerspectiveCamera(30,240/270,.1,50);pvCam.position.set(0,1.12,4.3);pvCam.lookAt(0,.86,0);
-  var cv=$('pv');
-  cv.addEventListener('pointerdown',function(e){pvDrag=true;try{cv.setPointerCapture(e.pointerId);}catch(x){}});
-  cv.addEventListener('pointermove',function(e){if(pvDrag)pvYaw+=e.movementX*.012;});
-  cv.addEventListener('pointerup',function(){pvDrag=false;});cv.addEventListener('pointercancel',function(){pvDrag=false;});
-}
-function rebuildPreview(){if(!pvRen)return;if(pvRig){pvRig.dead=true;clearRealAvatar(pvRig);pvScene.remove(pvRig.root);}pvRig=buildChar(me.ap);pvScene.add(pvRig.root);useRealAvatar(pvRig,me.avatarStyle);}
-function pvLoop(now){
-  if(!pvOn)return;var dt=Math.min(.05,Math.max(0,(now-pvLast)/1000));pvLast=now;pvT+=dt;
-  if(pvRig){if(!pvDrag)pvYaw+=dt*.5;pvRig.root.rotation.y=pvYaw;animateChar(pvRig,dt,{moving:0,sit:0,t:pvT});updateRealAvatar(pvRig,dt,{moving:0,sit:0,wave:0},false);var sw=SEE.value.w;SEE.value.w=0;pvRen.render(pvScene,pvCam);SEE.value.w=sw;}
-  requestAnimationFrame(pvLoop);
-}
-function renderTabs(){
-  var tb=$('tabs');tb.innerHTML='';TABS.forEach(function(t,i){var b=document.createElement('button');b.className='tab'+(i===curTab?' on':'');b.textContent=t.n;b.onclick=function(){curTab=i;renderTabs();};tb.appendChild(b);});
-  var o=$('opts');o.innerHTML='';
-  TABS[curTab].o.forEach(function(r){
-    var box=document.createElement('div');box.className='opt';var lb=document.createElement('div');lb.className='lb';lb.textContent=r[1];box.appendChild(lb);
-    var row=document.createElement('div');row.className='chips';
-    r[3].forEach(function(v,i){
-      var b=document.createElement('button');
-      if(r[0]==='sw'){b.className='sw'+(me.ap[r[2]]===i?' on':'');b.style.background=v;}
-      else{b.className='cp'+(me.ap[r[2]]===i?' on':'');b.textContent=v;}
-      b.onclick=function(){me.avatarStyle=0;$('avatarStyle').value='0';me.ap[r[2]]=i;renderTabs();rebuildPreview();};row.appendChild(b);});
-    box.appendChild(row);o.appendChild(box);});
-}
+/* ---------- saved character and realistic creator ---------- */
 function openCreator(first){
   if(F&&!first){toast('Đang đấu, chưa đổi đồ được!');return;}
-  initPreview();$('iName').value=me.name&&me.name!=='Khách'?me.name:loadName();$('iStatus').value=SV.st;
-  $('avatarStyle').value=String(me.avatarStyle);
-  $('bGo').textContent=first?'Vào quán':'Lưu nhân vật';
-  renderTabs();rebuildPreview();$('mMe').style.display='flex';pvOn=true;pvLast=performance.now();requestAnimationFrame(pvLoop);
+  $('iName').value=me.name&&me.name!=='Khách'?me.name:loadName();$('iStatus').value=SV.st;
+  $('currentCharacter').textContent=started?'Nhân vật hiện tại được giữ nguyên. Chỉ đổi khi bạn mở trình tạo và bấm Dùng nhân vật trong quán.':'Tạo nhân vật bằng trình tạo người thật rồi lưu để bắt đầu vào quán.';
+  $('bDetailedAvatar').textContent=started?'Đổi nhân vật':'Tạo nhân vật người thật';
+  $('bGo').textContent=first?'Vào quán':'Lưu thông tin';
+  $('mMe').style.display='flex';
+  if(first&&!me.avatarRecipe)setTimeout(function(){$('bDetailedAvatar').click();},0);
 }
 $('bMe').onclick=function(){if(started)openCreator(false);};
-$('avatarStyle').onchange=function(){me.avatarStyle=Number(this.value)||0;rebuildPreview();};
-$('bRand').onclick=function(){me.avatarStyle=0;$('avatarStyle').value='0';me.ap=randAp();me.ap[20]=2;renderTabs();rebuildPreview();};
+$('bDetailedAvatar').onclick=function(){resetInput();var frame=$('avatarEditorFrame'),url=new URL('character/app/',location.href);if(me.avatarRecipe)url.hash='c='+me.avatarRecipe;frame.src=url.href;$('avatarEditor').hidden=false;$('avatarEditor').style.display='flex';};
+$('bCloseAvatarEditor').onclick=function(){$('avatarEditor').hidden=true;$('avatarEditor').style.display='none';$('avatarEditorFrame').src='about:blank';};
+window.addEventListener('message',function(event){var frame=$('avatarEditorFrame');if(event.origin!==location.origin||event.source!==frame.contentWindow||!event.data||event.data.type!=='coffee-avatar-recipe')return;var recipe=cleanAvatarRecipe(event.data.code);if(!recipe){toast('Cấu hình nhân vật không hợp lệ hoặc quá lớn.');return;}me.avatarRecipe=recipe;me.avatarStyle=5;saveName(me.name);$('currentCharacter').textContent='Đã lưu nhân vật người thật tự tạo trên thiết bị này.';$('bCloseAvatarEditor').click();$('bGo').click();toast('Đã lưu nhân vật người thật.');});
 $('bGo').onclick=function(){
   var n=$('iName').value.replace(/\s+/g,' ').trim().slice(0,14);if(!n)n='Khách'+Math.floor(Math.random()*900+100);
-  me.name=n;SV.st=$('iStatus').value.replace(/\s+/g,' ').trim().slice(0,40);saveName(n);save();audio();pvOn=false;$('mMe').style.display='none';
+  me.name=n;SV.st=$('iStatus').value.replace(/\s+/g,' ').trim().slice(0,40);saveName(n);save();audio();$('mMe').style.display='none';
   setMyRig();
   if(!started){started=true;joinedAt=Date.now();me.x=0;me.z=10;if(!meTag)meTag=makeTag(me.name,true);toast('☕ Chào mừng '+n+' đến quán!');
     dayNight(true);
@@ -2234,14 +2240,15 @@ function renderOrder(){
   var tb=$('otabs');tb.innerHTML='';CATS.forEach(function(c,i){var b=document.createElement('button');b.className='tab'+(i===oCat?' on':'');b.textContent=c;b.onclick=function(){oCat=i;renderOrder();};tb.appendChild(b);});
   var g=$('items');g.innerHTML='';MENU.filter(function(m){return m.cat===oCat;}).forEach(function(m){var b=document.createElement('button');b.className='btn';b.textContent=m.e+' '+m.n+' · '+PRICE(m)+'🪙';b.onclick=function(){orderItem(m);};g.appendChild(b);});
 }
+var heldEpoch={d:0,f:0};
 function orderItem(m){
   var pr=PRICE(m);if(SV.coins<pr){toast('😅 Không đủ xu. Ngồi chơi thêm chút nhé!');return;}
   setCoins(-pr);
-  if(m.f)me.f=m.id;else me.d=m.id;me.dt=Date.now();setHeld(mine.rig,me.d,me.f);applyEquip(mine,eqArr(),!!F);
+  if(m.f){me.f=m.id;heldEpoch.f++;}else{me.d=m.id;heldEpoch.d++;}me.dt=Date.now();setHeld(mine.rig,me.d,me.f);applyEquip(mine,eqArr(),!!F);
   hideModal('mOrder');baristaSay='Của bạn đây, '+me.name+'! '+m.e;baristaUntil=Date.now()+5000;
   if(m.f)me.biteN=0;else me.sipN=0;toast(m.e+' Bạn đã gọi '+m.n+' (−'+pr+'🪙)');sfxDing(.12);updHud();push(true);QE('order');addXP(3);
 }
-$('bClear').onclick=function(){me.d=0;me.f=0;setHeld(mine.rig,0,0);applyEquip(mine,eqArr(),!!F);hideModal('mOrder');updHud();push(true);};
+$('bClear').onclick=function(){me.d=0;me.f=0;me.sipN=0;me.biteN=0;heldEpoch.d++;heldEpoch.f++;setHeld(mine.rig,0,0);applyEquip(mine,eqArr(),!!F);hideModal('mOrder');updHud();push(true);};
 
 /* ---------- shop / bag ---------- */
 var bTab='shop';
@@ -2437,14 +2444,14 @@ $('askN').onclick=function(){var a=askFrom;$('ask').style.display='none';askFrom
 var lastSend=0,lastKey='';
 function myState(){
   var st={n:me.name,st:SV.st,x:Math.round(me.x*50)/50,z:Math.round(me.z*50)/50,w:Math.round(me.yaw*20)/20,q:me.seat+1,d:me.d,f:me.f,dt:me.dt,mu:me.mu,tv:me.tv,
-    ms:me.ms,dm:1,a3:me.avatarStyle,gf:me.gf,ap:me.ap,em:me.em,eq:eqArr(),hp:me.hp,at:me.at,bk:me.bk,ch:me.ch,dc:me.dc,fg:me.fg,wl:[SV.win,SV.loss],lv:level(),sp:me.sp,y:Math.round(me.y*50)/50,wt:myWt,gd:SV.gd.p>=0?[SV.gd.p,SV.gd.k,SV.gd.s]:null,gm:me.gm||null,gi:me.gi||null,fs:me.fs||null,pa:me.pa||null};
+    ms:me.ms,dm:1,a3:me.avatarStyle,cr:me.avatarStyle===5?me.avatarRecipe:'',wd:me.wardrobe,gf:me.gf,ap:me.ap,em:me.em,eq:eqArr(),hp:me.hp,at:me.at,bk:me.bk,ch:me.ch,dc:me.dc,fg:me.fg,wl:[SV.win,SV.loss],lv:level(),sp:me.sp,y:Math.round(me.y*50)/50,wt:myWt,gd:SV.gd.p>=0?[SV.gd.p,SV.gd.k,SV.gd.s]:null,gm:me.gm||null,gi:me.gi||null,fs:me.fs||null,pa:me.pa||null};
   var s=JSON.stringify(st);
   while(s.length*2>3800&&st.ms.length>1){st.ms=st.ms.slice(1);s=JSON.stringify(st);}
   return st;
 }
 function push(force){
   if(!room||!started)return;var now=performance.now();if(!force&&now-lastSend<120)return;
-  var st=myState(),key=JSON.stringify(st);if(key===lastKey)return;lastSend=now;lastKey=key;
+  lastSend=now;var st=myState(),key=JSON.stringify(st);if(key===lastKey)return;lastKey=key;
   try{var pr=room.presence(st);if(pr&&pr.catch)pr.catch(function(){});}catch(e){}
 }
 function pair(a,mx){return(Array.isArray(a)&&isFinite(a[0])&&isFinite(a[1]))?[clamp(a[0]|0,0,mx),Number(a[1])]:[0,0];}
@@ -2472,7 +2479,7 @@ function handlePeers(change){
       ch:cleanRef(st.ch),dc:cleanRef(st.dc),fg:cleanFg(st.fg),lv:clamp(st.lv|0,1,999),sp:(Array.isArray(st.sp)&&isFinite(st.sp[0]))?[st.sp[0]|0,st.sp[1]==='f'?'f':'d']:[0,'d'],wl:Array.isArray(st.wl)?[Math.max(0,st.wl[0]|0),Math.max(0,st.wl[1]|0)]:[0,0]};
     var q=peers.get(id),blk=isBlocked(c.n),fresh=!q;
     if(!q){
-      var e=newEnt(ap,st.a3===1||st.a3===2||st.a3===3?st.a3:0);setHeld(e.rig,c.d,c.f);
+      var e=newEnt(ap,st.a3,st.wd,st.cr,true);setHeld(e.rig,c.d,c.f);
       q={ent:e,id:id,x:c.x,z:c.z,y:c.y,wtSeen:{},yaw:c.w,key:apKey(ap),ids:{},pids:{},gids:{},bub:null,seenDt:c.dt,mu:c.mu,emoId:c.em?c.em[0]:-1,emo:null,tag:makeTag(c.n,false,id),px:c.x,pz:c.z,spd:0,wave:0,d:c.d,f:c.f,atSeen:c.at[0],chSeen:c.ch?c.ch.i:-1,dcSeen:c.dc?c.dc.i:-1,guest:!!p.guest,
         hpPrev:c.hp,spSeen:c.sp[0]};
       c.ms.forEach(function(m){q.ids[m.i]=1;});c.gf.forEach(function(g){q.gids[g.i]=1;});
@@ -2480,8 +2487,9 @@ function handlePeers(change){
       if(started&&now-joinedAt>2500){toast((isFriend(c.n)?'⭐ Bạn bè ':'🚶 ')+c.n+' vừa bước vào quán');addMsg('all','','🚶 '+c.n+' vừa vào quán',false,true);}
     }else{
       var k=apKey(ap);if(k!==q.key){rebuildEnt(q.ent,ap);q.ent.wId=q.ent.bId=q.ent.petId=q.ent.tId='';q.key=k;setHeld(q.ent.rig,c.d,c.f);}
-      var peerStyle=st.a3===1||st.a3===2||st.a3===3?st.a3:0;if(q.ent.avatarStyle!==peerStyle){q.ent.avatarStyle=peerStyle;useRealAvatar(q.ent.rig,peerStyle);}
-      if(c.d!==q.d||c.f!==q.f){setHeld(q.ent.rig,c.d,c.f);q.ent.tId='';q.d=c.d;q.f=c.f;}
+      var peerRecipe=cleanAvatarRecipe(st.cr),peerStyle=Number.isInteger(st.a3)&&st.a3>=1&&st.a3<=5&&(st.a3!==5||peerRecipe)?st.a3:0;if(q.ent.avatarStyle!==peerStyle||q.ent.avatarRecipe!==peerRecipe){q.ent.avatarStyle=peerStyle;q.ent.avatarRecipe=peerRecipe;q.ent.loadRequested=false;useRealAvatar(q.ent.rig,0);}
+      var peerWardrobe=Wardrobe.clean(st.wd);if(peerWardrobe.join(',')!==q.ent.rig.wardrobe.join(','))applyWardrobe(q.ent.rig,peerWardrobe);
+      if(c.d!==q.d||c.f!==q.f){setHeld(q.ent.rig,c.d,c.f);q.d=c.d;q.f=c.f;}
       if(c.dt>q.seenDt&&(c.d||c.f)&&!blk){var it=MENU_BY_ID[c.d||c.f];if(it){sfxPop(.04);}}
       c.ms.forEach(function(m){if(!q.ids[m.i]){q.ids[m.i]=1;if(blk)return;q.bub={t:m.t,at:now};addMsg('all',c.n,m.t,false,false,id);sfxPop(.04);}});
       c.gf.forEach(function(g){if(!q.gids[g.i]){q.gids[g.i]=1;if(blk||g.to!==myPeer||!myPeer)return;var it=ITEM[g.k];SV.inv[it.id]=(SV.inv[it.id]|0)+1;save();toast('🎁 '+c.n+' tặng bạn '+it.e+' '+it.n+'!');addMsg(id,'','🎁 '+c.n+' đã tặng bạn '+it.e+' '+it.n,false,true);conv(id).unread++;updBadge();sfxDing(.1);}});
@@ -2628,15 +2636,15 @@ setInterval(function(){if(started&&!document.hidden)addXP(me.seat>=0?3:2);},6000
 
 /* ---------- held items (hand) ---------- */
 var lastSip=0;
-function sipDrink(){if(!me.d)return;var now=Date.now();if(now-lastSip<1100)return;lastSip=now;var m=MENU_BY_ID[me.d];
+function sipDrink(){if(!me.d||me.sipN>=6)return;var now=Date.now();if(now-lastSip<1100)return;lastSip=now;var m=MENU_BY_ID[me.d],epoch=heldEpoch.d;
   mine.sipT=1.2;mine.sipK='d';me.sp=[me.sp[0]+1,'d'];me.sipN++;QE('sip');sfxPop(.04);push(true);
-  if(me.sipN>=6){setTimeout(function(){if(!me.d)return;toast('🥤 Hết ly '+m.n+' rồi! Ra quầy gọi thêm nhé');me.d=0;me.sipN=0;setHeld(mine.rig,me.d,me.f);applyEquip(mine,eqArr(),!!F);updHud();push(true);if($('mHand').style.display==='flex')renderHand();},1200);}
+  if(me.sipN>=6){setTimeout(function(){if(heldEpoch.d!==epoch||!me.d)return;toast('🥤 Hết ly '+m.n+' rồi! Ra quầy gọi thêm nhé');me.d=0;me.sipN=0;heldEpoch.d++;setHeld(mine.rig,me.d,me.f);applyEquip(mine,eqArr(),!!F);updHud();push(true);if($('mHand').style.display==='flex')renderHand();},1200);}
   renderHand();}
-function biteFood(){if(!me.f)return;var now=Date.now();if(now-lastSip<1100)return;lastSip=now;var m=MENU_BY_ID[me.f];
+function biteFood(){if(!me.f||me.biteN>=4)return;var now=Date.now();if(now-lastSip<1100)return;lastSip=now;var m=MENU_BY_ID[me.f],epoch=heldEpoch.f;
   mine.sipT=1.2;mine.sipK='f';me.sp=[me.sp[0]+1,'f'];me.biteN++;QE('eat');sfxPop(.04);push(true);
-  if(me.biteN>=4){setTimeout(function(){if(!me.f)return;toast('😋 Đã ăn hết '+m.n+'!');me.f=0;me.biteN=0;setHeld(mine.rig,me.d,me.f);mine.tId='';applyEquip(mine,eqArr(),!!F);updHud();push(true);if($('mHand').style.display==='flex')renderHand();},1200);}
+  if(me.biteN>=4){setTimeout(function(){if(heldEpoch.f!==epoch||!me.f)return;toast('😋 Đã ăn hết '+m.n+'!');me.f=0;me.biteN=0;heldEpoch.f++;setHeld(mine.rig,me.d,me.f);mine.tId='';applyEquip(mine,eqArr(),!!F);updHud();push(true);if($('mHand').style.display==='flex')renderHand();},1200);}
   renderHand();}
-function dropHeld(kind){if(kind==='d'){me.d=0;me.sipN=0;toast('⬇️ Đã để ly xuống');}else{me.f=0;me.biteN=0;toast('⬇️ Đã để bánh xuống');}
+function dropHeld(kind){if(kind==='d'){me.d=0;me.sipN=0;heldEpoch.d++;toast('⬇️ Đã bỏ ly');}else{me.f=0;me.biteN=0;heldEpoch.f++;toast('⬇️ Đã bỏ bánh');}
   setHeld(mine.rig,me.d,me.f);mine.tId='';applyEquip(mine,eqArr(),!!F);updHud();push(true);renderHand();}
 function renderHand(){var l=$('hlist');if(!l)return;l.innerHTML='';var any=false;
   function row(ic,tx,btns){any=true;var r=document.createElement('div');r.className='hrow';r.innerHTML='<div class="ic">'+ic+'</div><div class="tx">'+tx+'</div>';
@@ -2882,6 +2890,7 @@ function petTrick(e,dt){var a=e.petA;if(!a||!e.pet)return;a.t+=dt;var b=e.pet.us
   if(a.t>1.8){b.rotation.y=0;b.rotation.z=0;b.position.y=0;if(e.pet.userData.h)e.pet.userData.h.rotation.x=0;e.petA=null;}}
 /* ---------- day / night ---------- */
 var DN={base:null,n:-1};
+function applyNightMaterials(root,n){root.traverse(function(o){var materials=Array.isArray(o.material)?o.material:[o.material];materials.forEach(function(m){if(!m||!m.isMeshStandardMaterial)return;if(m.userData.envB==null)m.userData.envB=m.envMapIntensity;m.envMapIntensity=m.userData.envB*(1-.85*n);});});}
 function nightFactor(){var m=/[?&]hour=(\d+(\.\d+)?)/.exec(location.search),d=new Date(),h=m?+m[1]:d.getHours()+d.getMinutes()/60;
   if(h<5||h>=19.5)return 1;if(h<7)return 1-(h-5)/2;if(h>=17.5)return(h-17.5)/2;return 0;}
 function dayNight(force){var n=nightFactor();if(!force&&Math.abs(n-DN.n)<.01)return;DN.n=n;
@@ -2892,16 +2901,17 @@ function dayNight(force){var n=nightFactor();if(!force&&Math.abs(n-DN.n)<.01)ret
     DN.stars=new THREE.Points(sg,new THREE.PointsMaterial({color:'#ffffff',size:.5,sizeAttenuation:true,transparent:true,opacity:0,depthWrite:false,fog:false}));scene.add(DN.stars);
     DN.moon=new THREE.Mesh(new THREE.SphereGeometry(2.4,24,16),new THREE.MeshBasicMaterial({color:'#fff6d8',fog:false,transparent:true,opacity:0}));DN.moon.position.set(-30,40,-45);scene.add(DN.moon);}
   var dusk=Math.max(0,1-Math.abs(n-.5)*2.5);
-  var sunC=new THREE.Color('#ffd08a').lerp(new THREE.Color('#ff8a4a'),dusk).lerp(new THREE.Color('#8fa8ff'),Math.max(0,n-.5)*2);
-  if(W.sun){W.sun.intensity=3.2*(1-n)+.22*n;W.sun.color.copy(sunC);}
+  var sunC=new THREE.Color('#ffdca7').lerp(new THREE.Color('#ff8a4a'),dusk).lerp(new THREE.Color('#8fa8ff'),Math.max(0,n-.5)*2);
+  if(W.sun){W.sun.intensity=2.7*(1-n)+.22*n;W.sun.color.copy(sunC);}
   if(DN.hemi){DN.hemi.intensity=1-.78*n;DN.hemi.color.set('#fff0dc').lerp(new THREE.Color('#7a8cc8'),n);DN.hemi.groundColor.set('#8a7058').lerp(new THREE.Color('#2a2438'),n);}
   var bg=new THREE.Color('#e9cf9a').lerp(new THREE.Color('#ff9e6a'),dusk*.6).lerp(new THREE.Color('#141a34'),n);scene.background.copy(bg);scene.fog.color.copy(bg);
   DN.base.sky.forEach(function(m){m.color.set('#ffffff').lerp(new THREE.Color('#ffb080'),dusk*.7).lerp(new THREE.Color('#1c2550'),n);});
   DN.base.pl.forEach(function(p){p[0].intensity=p[1]*(1+.9*n);});
+  if(W.pondLights)W.pondLights.forEach(function(p){p[0].intensity=p[1]*(.15+1.25*n);});
   DN.base.add.forEach(function(a){a[0].opacity=Math.min(1,a[1]*(.55+.75*n));if(a[2])a[0].size=a[2]*(1+.35*n);});
   DN.base.shaft.forEach(function(a){a[0].opacity=a[1]*(1-n);});
   DN.stars.material.opacity=Math.max(0,n-.3)/.7;DN.moon.material.opacity=Math.max(0,n-.4)/.6;DN.moon.visible=n>.4;DN.stars.visible=n>.3;
-  scene.traverse(function(o){var m=o.material;if(!m||Array.isArray(m)||!m.isMeshStandardMaterial)return;if(m.userData.envB==null)m.userData.envB=m.envMapIntensity;m.envMapIntensity=m.userData.envB*(1-.85*n);});
+  applyNightMaterials(scene,n);
   renderer.toneMappingExposure=.95-.08*n;}
 setInterval(function(){dayNight(false);},20000);
 /* ---------- shared music & TV ---------- */
@@ -2983,6 +2993,9 @@ window.addEventListener('keydown',function(e){var ae=document.activeElement;if(a
   if(e.key===' '||k==='e'){if(!anyModal())doAction(near);e.preventDefault();}if(e.key.indexOf('Arrow')===0)e.preventDefault();});
 window.addEventListener('keyup',function(e){var k=e.key.toLowerCase();keys[k]=0;if(k==='k')setBlock(0);});
 var joy=$('joy'),knob=$('knob'),jid=null;
+function resetInput(){keys={};jx=0;jy=0;jid=null;camId=null;knob.style.transform='none';blockHeld=false;if(me.bk)setBlock(0);}
+window.addEventListener('blur',resetInput);
+document.addEventListener('visibilitychange',function(){if(document.hidden)resetInput();});
 function joyMove(e){var r=joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;var dx=e.clientX-cx,dy=e.clientY-cy,m=Math.hypot(dx,dy),max=r.width/2-8;if(m>max){dx*=max/m;dy*=max/m;}knob.style.transform='translate('+dx+'px,'+dy+'px)';jx=dx/max;jy=dy/max;}
 joy.addEventListener('pointerdown',function(e){jid=e.pointerId;try{joy.setPointerCapture(jid);}catch(x){}joyMove(e);e.preventDefault();});
 joy.addEventListener('pointermove',function(e){if(e.pointerId===jid)joyMove(e);});
@@ -3021,13 +3034,21 @@ function blockedAt(x,z,y){if(W.inStair&&W.inStair(x,z))return false;if(y>3.9&&W.
 function tryMove(nx,nz){var ny=hAt(nx,nz,me.y);if(Math.abs(ny-me.y)>.55)return null;if(blockedAt(nx,nz,ny))return null;return ny;}
 function peerVisible(q){var onRoof=me.y>2,qr=q.y>2;if(qr&&!onRoof&&q.z<11.6&&me.z<12.2)return false;if(!qr&&onRoof&&q.z<11.9)return false;return true;}
 function angDiff(a,b){var d=(b-a)%(Math.PI*2);if(d>Math.PI)d-=Math.PI*2;if(d<-Math.PI)d+=Math.PI*2;return d;}
+function updatePeerAvatarBudget(e,near,now){
+  if(near){e.realFarAt=null;if(e.loadRequested&&e.rig.retryAvatarAt&&now>=e.rig.retryAvatarAt){e.rig.retryAvatarAt=0;e.loadRequested=false;}if(e.avatarStyle&&!e.loadRequested){e.loadRequested=true;useRealAvatar(e.rig,e.avatarStyle,e.avatarRecipe);}return;}
+  if(!e.loadRequested)return;
+  if(e.realFarAt==null){e.realFarAt=now;return;}
+  if(now-e.realFarAt>=15000){useRealAvatar(e.rig,0);e.loadRequested=false;e.realFarAt=null;}
+}
 
 /* ---------- loop ---------- */
-var tmpSee=new THREE.Vector3(),fpsAcc=0,fpsN=0;
-var last=performance.now(),camPos=new THREE.Vector3(0,8,20),camT=new THREE.Vector3(),firstFrame=true,gotoStuck=0,realPeers=new Set(),realPeersAt=0;
+var tmpSee=new THREE.Vector3(),peerViewProjection=new THREE.Matrix4(),peerFrustum=new THREE.Frustum(),peerBounds=new THREE.Sphere(new THREE.Vector3(),3),fpsAcc=0,fpsN=0;
+function qualityTick(cadence,dt,hz){cadence.elapsed+=dt;cadence.phase+=dt*hz;if(cadence.phase<1)return 0;cadence.phase-=Math.floor(cadence.phase);var elapsed=cadence.elapsed;cadence.elapsed=0;return elapsed;}
+var last=performance.now(),camPos=new THREE.Vector3(0,8,20),camT=new THREE.Vector3(),camDes=new THREE.Vector3(),camTarget=new THREE.Vector3(),firstFrame=true,gotoStuck=0,realPeers=new Set(),realPeersAt=0,peerTagAt=0,shadowAcc=0,peerPoseCadence={phase:0,elapsed:0},baristaCadence={phase:0,elapsed:0},worldCadence={phase:0,elapsed:0},gardenCadence={phase:0,elapsed:0};
 function frame(now){
   requestAnimationFrame(frame);
-  var dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;T+=dt;var nowMs=Date.now();
+  if(!firstFrame&&(document.hidden||!$('avatarEditor').hidden)){last=now;fpsAcc=0;fpsN=0;qUp=0;return;}
+  var elapsed=Math.max(0,(now-last)/1000),dt=Math.min(.05,elapsed);last=now;T+=dt;var nowMs=Date.now();
   var ko=F&&F.end&&F.res==='lose';
   if(F&&!blockHeld&&!keys['k']&&me.bk)setBlock(0);
   // input
@@ -3058,39 +3079,44 @@ function frame(now){
   if(me.wave>0)me.wave-=dt;
   animateChar(rg,dt,{moving:me.moving?1:0,speed:me.bk?.5:1,sit:me.seat>=0,wave:me.wave>0,t:T});
   postAnim(mine,dt,ko,!!me.bk);
-  updateRealAvatar(rg,dt,{moving:me.moving,sit:me.seat>=0,wave:me.wave>0},!!(F||mine.act||rg.hasD||rg.hasF||mine.w||mine.b||mine.rod));
+  updateRealAvatar(rg,dt,{moving:me.moving,sit:me.seat>=0,wave:me.wave>0,sipT:mine.sipT,sipK:mine.sipK,toy:mine.toy,fight:!!F,action:mine.act,weapon:mine.w},!!(ko||mine.rod||(mine.act&&!(F&&(mine.act.k==='atk'||mine.act.k==='hit')))));
   if(mine.toy&&SV.eq.h==='guitar'&&me.seat>=0){rg.armR.sh.rotation.x=-.7;rg.armR.el.rotation.x=-.8+Math.sin(T*9)*.15;}
   mine.oy=me.y;petUpdate(mine,dt,me.x,me.z,me.yaw,me.moving,me.seat>=0);
   rg.root.visible=started;if(mine.pet)mine.pet.visible=started;
   // peers
-  if(now-realPeersAt>1000){realPeersAt=now;var closest=[];peers.forEach(function(q,id){if(q.ent.avatarStyle)closest.push({id:id,d:(q.x-me.x)*(q.x-me.x)+(q.z-me.z)*(q.z-me.z)});});closest.sort(function(a,b){return a.d-b.d;});realPeers=new Set(closest.slice(0,QL===0?2:low?3:8).map(function(v){return v.id;}));}
+  // Use the previous rendered camera and a padded sphere to keep edge transitions stable.
+  peerViewProjection.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);peerFrustum.setFromProjectionMatrix(peerViewProjection);
+  if(now-realPeersAt>1000){realPeersAt=now;var closest=[];peers.forEach(function(q,id){if(q.ent.avatarStyle&&peerVisible(q))closest.push({id:id,d:(q.x-me.x)*(q.x-me.x)+(q.z-me.z)*(q.z-me.z)});});closest.sort(function(a,b){return a.d-b.d;});realPeers=new Set(closest.slice(0,QL===0?2:low?3:8).map(function(v){return v.id;}));}
+  var peerPoseDt=qualityTick(peerPoseCadence,dt,QL===0?24:QL===1?30:45);
   peers.forEach(function(q){
     var k=Math.min(1,dt*9);q.x+=(q.tx-q.x)*k;q.y+=((q.ty||0)-q.y)*k;q.z+=(q.tz-q.z)*k;q.yaw+=angDiff(q.yaw,q.tyaw)*k;
     var spd=Math.hypot(q.x-q.px,q.z-q.pz)/Math.max(dt,.001);q.px=q.x;q.pz=q.z;q.spd+=(spd-q.spd)*Math.min(1,dt*8);
     var r=q.ent.rig,sit=q.seat>=0&&q.seat<SEATS.length,qko=!!q.fg&&q.hp<=0;
-    r.root.position.set(q.x,sit?SEATS[q.seat].h+.06-HIP_Y*r.scale:q.y,q.z);var qvis=peerVisible(q);r.root.visible=qvis;if(q.ent.pet)q.ent.pet.visible=qvis;q.ent.oy=q.y;r.root.rotation.y=q.yaw;
+    updatePeerAvatarBudget(q.ent,realPeers.has(q.id),now);
+    r.root.position.set(q.x,sit?SEATS[q.seat].h+.06-HIP_Y*r.scale:q.y,q.z);var qvis=peerVisible(q);peerBounds.center.set(q.x,r.root.position.y+1,q.z);var qon=qvis&&peerFrustum.intersectsSphere(peerBounds);q.onScreen=qon;r.root.visible=qvis;if(q.ent.pet)q.ent.pet.visible=qon;q.ent.oy=q.y;r.root.rotation.y=q.yaw;
     if(q.wave>0)q.wave-=dt;
-    animateChar(r,dt,{moving:(!sit&&q.spd>.5)?1:0,speed:clamp(q.spd/3.6,.5,1.3),sit:sit,wave:q.wave>0,t:T});
-    postAnim(q.ent,dt,qko,!!q.bk);
-    updateRealAvatar(r,dt,{moving:!sit&&q.spd>.5,sit:sit,wave:q.wave>0},!!(!qvis||!realPeers.has(q.id)||q.fg||q.ent.act||r.hasD||r.hasF||q.ent.w||q.ent.b||q.ent.rod));
-    petUpdate(q.ent,dt,q.x,q.z,q.yaw,q.spd>.5,sit);
+    if(peerPoseDt){if(qon)animateChar(r,peerPoseDt,{moving:(!sit&&q.spd>.5)?1:0,speed:clamp(q.spd/3.6,.5,1.3),sit:sit,wave:q.wave>0,t:T});
+      postAnim(q.ent,peerPoseDt,qko,!!q.bk);
+      updateRealAvatar(r,peerPoseDt,{moving:!sit&&q.spd>.5,sit:sit,wave:q.wave>0,sipT:q.ent.sipT,sipK:q.ent.sipK,toy:q.ent.toy,fight:!!q.fg,action:q.ent.act,weapon:q.ent.w},!!(!qon||!realPeers.has(q.id)||qko||q.ent.rod||(q.ent.act&&!(q.fg&&(q.ent.act.k==='atk'||q.ent.act.k==='hit')))));
+      if(qon)petUpdate(q.ent,peerPoseDt,q.x,q.z,q.yaw,q.spd>.5,sit);}
+    var close=(q.x-me.x)*(q.x-me.x)+(q.z-me.z)*(q.z-me.z)<625;if(!q.fs)ensureRod(q.ent,false);else if(q.onScreen||close){ensureRod(q.ent,true);rodFrame(q.ent,q.fs,T);}else if(q.ent.rod){q.ent.rod.visible=false;q.ent.bob.visible=false;q.ent.line.visible=false;}if(peerPoseDt)petTrick(q.ent,peerPoseDt);
   });
   // barista
-  barista.torso.rotation.y=Math.sin(T*.7)*.25;animateChar(barista,dt,{moving:0,sit:0,wave:0,t:T,look:Math.sin(T*.4)*.5});
-  barista.armR.sh.rotation.x=-.5+Math.sin(T*2)*.15;barista.armL.sh.rotation.x=-.4;
-  W.upd.forEach(function(f){f(dt,T,musicOn());});
+  var baristaDt=qualityTick(baristaCadence,dt,QL===0?20:QL===1?30:45);if(baristaDt){barista.torso.rotation.y=Math.sin(T*.7)*.25;animateChar(barista,baristaDt,{moving:0,sit:0,wave:0,t:T,look:Math.sin(T*.4)*.5});
+    barista.armR.sh.rotation.x=-.5+Math.sin(T*2)*.15;barista.armL.sh.rotation.x=-.4;updateRealAvatar(barista,baristaDt,{moving:false,sit:false,wave:false},false);}
+  if(started&&!baristaRealRequested&&Math.hypot(me.x-W.barista.x,me.z-W.barista.z)<9){baristaRealRequested=true;useRealAvatar(barista,2);}
+  var worldDt=qualityTick(worldCadence,dt,QL===0?20:QL===1?30:60);if(worldDt)W.upd.forEach(function(f){f(worldDt,T,musicOn());});
   TV.update(now,dt,T);
   if(W.roofVisible)W.roofVisible(me.y>2||me.z>12.3);if(W.facadeVisible)W.facadeVisible(me.z>11.9||me.y>2);
-  gardenFrame(dt,nowMs);fishFrame(dt,now);
+  var gardenDt=qualityTick(gardenCadence,dt,QL===0?10:QL===1?15:30);if(gardenDt)gardenFrame(gardenDt,nowMs);fishFrame(dt,now);
   if(mine.rod)rodFrame(mine,me.fs,T);petTrick(mine,dt);
-  peers.forEach(function(q){ensureRod(q.ent,!!q.fs);if(q.ent.rod)rodFrame(q.ent,q.fs,T);petTrick(q.ent,dt);});
   HOT.forEach(function(h){var on=near&&near.id===h.id;var p=1.15+Math.sin(T*3+h.x)*.06;h.ring.scale.setScalar(on?1.3:p);h.rm.opacity=on?.55:.25;});
   // camera
   dist+=(distT-dist)*Math.min(1,dt*6);
   var asp=vw/vh,dd=dist*(asp<1?1+(1-asp)*.55:1);
   var tgx=me.x,tgy=(me.seat>=0?.9:1.0)+me.y,tgz=me.z;
-  var cp=Math.cos(pitch),des=new THREE.Vector3(tgx+Math.sin(yawC)*cp*dd,Math.max(me.y+2.2,tgy+Math.sin(pitch)*dd),tgz+Math.cos(yawC)*cp*dd);
-  camPos.lerp(des,firstFrame?1:1-Math.exp(-dt*7));camT.lerp(new THREE.Vector3(tgx,tgy,tgz),firstFrame?1:1-Math.exp(-dt*9));
+  var cp=Math.cos(pitch);camDes.set(tgx+Math.sin(yawC)*cp*dd,Math.max(me.y+2.2,tgy+Math.sin(pitch)*dd),tgz+Math.cos(yawC)*cp*dd);camTarget.set(tgx,tgy,tgz);
+  camPos.lerp(camDes,firstFrame?1:1-Math.exp(-dt*7));camT.lerp(camTarget,firstFrame?1:1-Math.exp(-dt*9));
   camera.position.copy(camPos);camera.lookAt(camT);camera.updateMatrixWorld();
   // tags
   var hh=1.95*rg.scale+(me.ap[15]===1?.3:me.ap[15]?.1:0);
@@ -3098,9 +3124,9 @@ function frame(now){
   if(me.emoLocal&&nowMs-me.emoLocal.at<3200){myBub=EMOJ[me.emoLocal.k];big=true;}else if(me.bub&&nowMs-me.bub.at<9000)myBub=me.bub.t;
   if(ko){myBub='😵💫';big=true;}
   if(started&&meTag)placeTag(meTag,me.x,(ko?.8:me.seat>=0?hh-.25:hh)+me.y,me.z,myBub,big,F?me.hp:null);
-  peers.forEach(function(q){var b=null,bg=false;if(q.emo&&nowMs-q.emo.at<3200){b=EMOJ[q.emo.k];bg=true;}else if(q.bub&&nowMs-q.bub.at<9000)b=q.bub.t;
+  if(now-peerTagAt>(low?120:66)){peerTagAt=now;peers.forEach(function(q){var b=null,bg=false;if(q.emo&&nowMs-q.emo.at<3200){b=EMOJ[q.emo.k];bg=true;}else if(q.bub&&nowMs-q.bub.at<9000)b=q.bub.t;
     var qko=!!q.fg&&q.hp<=0;if(qko){b='😵💫';bg=true;}
-    var h2=1.95*q.ent.rig.scale+(q.ap&&q.ap[15]===1?.3:q.ap&&q.ap[15]?.1:0);if(!peerVisible(q)){q.tag.el.style.visibility='hidden';return;}placeTag(q.tag,q.x,(qko?.8:q.seat>=0?h2-.25:h2)+(q.seat>=0?(SEATS[q.seat].y0||0):q.y),q.z,b,bg,q.fg?q.hp:null);});
+    var h2=1.95*q.ent.rig.scale+(q.ap&&q.ap[15]===1?.3:q.ap&&q.ap[15]?.1:0);if(!peerVisible(q)){q.tag.el.style.visibility='hidden';return;}placeTag(q.tag,q.x,(qko?.8:q.seat>=0?h2-.25:h2)+(q.seat>=0?(SEATS[q.seat].y0||0):q.y),q.z,b,bg,q.fg?q.hp:null);});}
   var bt=null;if(nowMs<baristaUntil)bt=baristaSay;else{var ph=T%14;if(ph<6)bt=BARISTA_LINES[Math.floor(T/14)%BARISTA_LINES.length];}
   placeTag(baristaTag,W.barista.x,2.0,W.barista.z,bt,false);
   HOT.forEach(function(h){var d=Math.hypot(me.x-h.x,me.z-h.z);var p=project(h.ix,h.y,h.iz);if(!p||d>14){h.poi.style.visibility='hidden';}else{h.poi.style.visibility='visible';h.poi.style.transform='translate3d('+Math.round(p.x-19)+'px,'+Math.round(p.y-19)+'px,0)';}});
@@ -3111,13 +3137,14 @@ function frame(now){
   $('bChat').style.display=show?'block':'none';$('bHand').style.display=show&&!F&&holding()?'block':'none';$('bEmo').style.display=show&&!F?'block':'none';
   if(F&&((T*10)|0)%3===0)updFightUI();
   var pv=tmpSee.set(me.x,(me.seat>=0?.75:.95)+me.y,me.z).applyMatrix4(camera.matrixWorldInverse);SEE.value.set(pv.x,pv.y,pv.z,started?1:0);
-  if(comp)comp.render(dt);else renderer.render(scene,camera);
+  if(QL>0){shadowAcc+=dt;var shadowStep=QL===1?(low?1/15:1/20):1/30;if(shadowAcc>=shadowStep){renderer.shadowMap.needsUpdate=true;shadowAcc=0;}}
+  if(!document.hidden&&$('avatarEditor').hidden){if(comp)comp.render(dt);else renderer.render(scene,camera);}
   if(photoReq)takePhoto();
-  fpsAcc+=dt;fpsN++;if(fpsAcc>3){var fps=fpsN/fpsAcc;fpsAcc=0;fpsN=0;if(T>5&&!document.hidden&&!qLock){if(fps<34&&QL>0){QL--;qDown=true;setQuality(QL);}else if(fps>56&&!qDown&&QL<2){if(++qUp>=2){setQuality(QL+1);qUp=0;}}else qUp=0;}}
+  if(document.hidden||!started||elapsed>2){fpsAcc=0;fpsN=0;qUp=0;}else{fpsAcc+=elapsed;fpsN++;if(fpsAcc>3){var fps=fpsN/fpsAcc;fpsAcc=0;fpsN=0;if(T>5&&!qLock){if(fps<40&&QL>0){qUp=0;setQuality(QL-1);}else if(fps>56&&QL<(low?1:2)){if(++qUp>=4){setQuality(QL+1);qUp=0;}}else qUp=0;}}}
   if(firstFrame){firstFrame=false;var l=$('loading');if(l)l.style.display='none';}
 }
 requestAnimationFrame(frame);
-setTimeout(function(){me.name=loadName()||'Khách';updHud();openCreator(true);},60);
+setTimeout(function(){me.name=loadName()||'Khách';updHud();openCreator(!loadName());if(loadName())$('bGo').click();},60);
 window.__dbg={me:me,SV:SV,W:W,doAction:doAction,SEATS:SEATS,HOT:HOT,peers:peers,openProfile:openProfile,challenge:challenge,attack:attack,get F(){return F;},setMusic:setMusic,startGame:startGame,gamePlay:gamePlay,get GS(){return GS;},inviteGame:inviteGame,startFish:startFish,fishBtn:fishBtn,get FS(){return FS;},dayNight:dayNight,openHub:openHub,petAct:petAct,tryMove:tryMove,nearest:nearest,waterPlant:waterPlant,gardenDo:gardenDo,thirsty:thirsty,QE:QE,addXP:addXP,openQuests:openQuests,sipDrink:sipDrink,standUp:standUp,setTV:setTV,openMedia:openMedia,cam:function(y,p,d){yawC=y;pitch=p;distT=dist=d;},get myPeer(){return myPeer;}};
 })();
 
